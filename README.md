@@ -3,6 +3,8 @@
 **Personalised B2B email where every sentence can be traced to a source, and nothing is
 sent until a person approves the exact text.**
 
+![A drafted email: every sentence is underlined and linked to its source, with the hook and its strength on the right](docs/media/draft.png)
+
 ## The problem I saw
 
 Cold outreach has two bad defaults. Mail-merge is generic and gets ignored. AI-written
@@ -25,6 +27,8 @@ One codebase, two modes.
 send (11 as written, 3 after one small edit), **0 wrong facts**, about 27 seconds and
 **$0.02 per prospect**. The full report, with every email and the page its hook came from,
 is in the app under **Evaluation** and in [docs/WORKBENCH_EVALUATION.md](docs/WORKBENCH_EVALUATION.md).
+
+![Evaluation page: 14 of 15 ready to send, 0 wrong facts, 27 s and $0.020 per prospect](docs/media/evaluation.png)
 
 ```mermaid
 flowchart LR
