@@ -1,0 +1,70 @@
+{# Found / chosen / set aside. `pick`: show tick boxes and the write button. #}
+{% set groups = facts(run) %}
+{% set has_draft = run.draft is not none and run.draft %}
+<form method="post" action="/runs/{{ run.id }}/draft/write" class="fact-form" {% if pick %}data-write-draft{% endif %}>
+  <input type="hidden" name="choose_facts" value="1">
+  <section class="fact-group" aria-labelledby="chosen-heading-{{ place }}">
+    <h3 id="chosen-heading-{{ place }}" class="fact-group-title">Chosen <span class="count">{{ groups.chosen|length }}</span></h3>
+    <p class="hint">{% if pick %}Ticked facts are what the email is written from. Untick one to leave it out.{% else %}The facts the workbench would use, strongest first.{% endif %}</p>
+    <ol class="facts" data-findings>
+      {% for f in groups.chosen %}
+      <li class="fact tone-{{ f.tone }}" data-fact="chosen">
+        <label class="fact-row">
+          {% if pick and f.tickable %}<input type="hidden" name="offered" value="{{ f.source_id }}"><input type="checkbox" name="use" value="{{ f.source_id }}" checked {% if f.locked %}disabled title="The hook is always used"{% endif %}>{% else %}<span class="fact-bullet" aria-hidden="true"></span>{% endif %}
+          <span class="fact-body">
+            <span class="fact-meta"><span class="chip">{{ f.label }}</span>{% if f.in_email %}<span class="in-email" data-in-email>In the email</span>{% endif %}{% if f.ref %}<a class="ref" href="#ref-{{ f.ref }}" aria-label="Source {{ f.ref }}">{{ f.ref }}</a>{% endif %}</span>
+            <span class="fact-text">{{ f.text }}</span>
+            {% if f.why %}<span class="fact-why">{{ f.why }}</span>{% endif %}
+          </span>
+        </label>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% if groups.extra %}
+  <section class="fact-group" aria-labelledby="extra-heading-{{ place }}">
+    <h3 id="extra-heading-{{ place }}" class="fact-group-title">Also found, not chosen <span class="count">{{ groups.extra|length }}</span></h3>
+    <p class="hint">True and sourced, but weaker reasons to write. {% if pick %}Tick one to add it.{% endif %}</p>
+    <ol class="facts">
+      {% for f in groups.extra %}
+      <li class="fact tone-{{ f.tone }}" data-fact="extra">
+        <label class="fact-row">
+          {% if pick and f.tickable %}<input type="hidden" name="offered" value="{{ f.source_id }}"><input type="checkbox" name="use" value="{{ f.source_id }}">{% else %}<span class="fact-bullet" aria-hidden="true"></span>{% endif %}
+          <span class="fact-body">
+            <span class="fact-meta"><span class="chip">{{ f.label }}</span>{% if f.in_email %}<span class="in-email">In the email</span>{% endif %}{% if f.ref %}<a class="ref" href="#ref-{{ f.ref }}" aria-label="Source {{ f.ref }}">{{ f.ref }}</a>{% endif %}</span>
+            <span class="fact-text">{{ f.text }}</span>
+            <span class="fact-why">{{ f.why }}</span>
+          </span>
+        </label>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  {% if pick and has_draft and run.campaign.supported_capabilities %}
+  <section class="fact-group" aria-labelledby="offer-heading-{{ place }}">
+    <h3 id="offer-heading-{{ place }}" class="fact-group-title">From your goal</h3>
+    <ol class="facts">
+      {% for text in run.campaign.supported_capabilities %}<li class="fact tone-goal"><label class="fact-row"><input type="hidden" name="offered" value="capability-{{ loop.index }}"><input type="checkbox" name="use" value="capability-{{ loop.index }}" checked><span class="fact-body"><span class="fact-text">{{ text }}</span></span></label></li>{% endfor %}
+      {% for point in run.campaign.proof_points or [] %}<li class="fact tone-goal"><label class="fact-row"><input type="hidden" name="offered" value="proof-{{ loop.index }}"><input type="checkbox" name="use" value="proof-{{ loop.index }}" checked><span class="fact-body"><span class="fact-text">{{ point }}</span></span></label></li>{% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  {% if groups.set_aside %}
+  <details class="fact-group set-aside" data-set-aside>
+    <summary class="fact-group-title">Set aside <span class="count">{{ groups.set_aside|length }}</span></summary>
+    <p class="hint">Found but not usable. Each one says why.</p>
+    <ol class="facts">
+      {% for f in groups.set_aside %}
+      <li class="fact tone-call"><div class="fact-row"><span class="fact-bullet" aria-hidden="true"></span><span class="fact-body">{% if f.ref %}<span class="fact-meta"><a class="ref" href="#ref-{{ f.ref }}" aria-label="Source {{ f.ref }}">{{ f.ref }}</a></span>{% endif %}<span class="fact-text">{{ f.text }}</span><span class="fact-why">{{ f.why }}</span></span></div></li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+  {% if pick %}
+  <div class="form-actions">
+    <button type="submit" class="{{ 'secondary-action' if has_draft else 'primary-action' }}">{{ 'Rewrite with the ticked facts' if has_draft else 'Write the email from the ticked facts' }}</button>
+    <p class="hint" data-write-hint>{% if run.mode == 'live' %}One writing request, about $0.015.{% else %}Free in example mode.{% endif %}{% if has_draft %} Your current version stays in the history.{% endif %}</p>
+  </div>
+  {% endif %}
+</form>

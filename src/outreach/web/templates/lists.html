@@ -1,0 +1,11 @@
+{% extends 'base.html' %}{% block body %}
+<p class="eyebrow">YOUR APPROVED AUDIENCES</p>
+<h1>Lead lists</h1>
+<p>Save reviewed leads once and choose them for new or existing campaigns.</p>{% include '_filters.html' %}
+<div class="card-grid">{% for l in lists %}<a class="work-card" href="/lists/{{ l.id }}">
+<span class="badge">{{ l.lead_count }} approved leads</span>
+<h3>{{ l.name }}</h3>
+<p>{{ l.tags }}</p>
+</a>{% else %}
+<div class="empty">Review a <a href="/research">research run</a> and save approved leads to your first list.</div>{% endfor %}</div>
+{% endblock %}

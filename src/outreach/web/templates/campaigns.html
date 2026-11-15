@@ -1,0 +1,31 @@
+{% extends 'base.html' %}{% block body %}
+<div class="section-heading">
+<div>
+<p class="eyebrow">ALL YOUR OUTREACH</p>
+<h1>Campaigns</h1>
+</div>
+<a href="/campaigns/new" class="button">New campaign</a>
+</div>{% if feedback_enabled %}<nav class="work-views" aria-label="Campaign view"><a href="/campaigns">Current work</a><a href="/campaigns?status=archived">Archived work</a></nav>{% endif %}<details class="panel compact"><summary>Search & filter</summary>{% include '_filters.html' %}</details>
+<div class="card-grid">{% for c in campaigns %}
+<article class="work-card">
+<span class="badge">{{ 'Getting ready' if c.status=='draft' else c.status|friendly_status }}</span>
+<h3>
+<a href="/campaigns/{{ c.id }}">{{ c.name }}</a>
+</h3>
+<p>{{ c.purpose or 'other' }} · {{ c.tags or '' }}</p>
+<small>{{ c.sender_email or 'Choose email before sending' }}</small>
+<div class="mini-stats">
+<span>
+<strong>{{ c.contacts }}</strong> leads</span>
+<span>
+<strong>{{ c.sent }}</strong> sent</span>
+<span>
+<strong>{{ c.replies }}</strong> replies</span>
+</div>
+<div class="actions">
+<a href="/campaigns/{{ c.id }}">Open dashboard →</a>
+<a class="button secondary" href="/campaigns/{{ c.id }}/settings">Edit campaign</a><a class="button secondary remove-link" href="{{ "/workspace/campaign/"~c.id~"/remove" if feedback_enabled else "#app-update" }}">{{ "Restore / delete" if c.status=="archived" else "Delete / archive" }}</a>
+</div>
+</article>{% else %}
+<div class="empty">Create your first campaign. Add your message and connect email when you are ready.</div>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block body %}
+<p><a href="/accounts">← Email accounts</a></p><h1>Connect Gmail or Zoho</h1>
+<p>Sign in on your email provider's own page. The app receives permission to send messages and read your inbox for replies. It does not receive your provider password. Each campaign chooses its own account; connecting one sends no email.</p>
+{% for provider, item in readiness.items() %}
+<section class="panel narrow"><h2>{{ 'Gmail' if provider == 'gmail' else 'Zoho Mail' }}</h2>
+{% if not item.ready %}<p class="warning">Setup needed. {{ item.reason }}</p>{% endif %}
+<form method="post" action="/accounts/oauth/{{ provider }}/start">
+<label>Account label<input name="label" required maxlength="300" placeholder="Career outreach"></label>
+<label>Your name<input name="sender_name" required maxlength="300"></label>
+<label>Company or organization<input name="company" required maxlength="300"></label>
+<label>Postal address<textarea name="address" required maxlength="300" rows="2"></textarea></label>
+{% if provider == 'zoho' %}<label>Zoho account region<select name="region">{% for region in ['com','in','eu','com.au','jp','ca'] %}<option>{{ region }}</option>{% endfor %}</select></label>{% endif %}
+<p class="muted">Only the address confirmed by the provider can become the sender. Reconnecting the same email returns unsent approved drafts to review. Your consent remains revocable in provider settings.</p>
+<button {% if not item.ready %}disabled{% endif %}>Continue with {{ 'Google' if provider == 'gmail' else 'Zoho' }}</button></form></section>
+{% endfor %}
+<details class="panel narrow"><summary>Administrator setup</summary>
+<p>Choose an HTTPS host for the real Python app. Set its address as <code>OUTREACH_OAUTH_PUBLIC_URL</code>, add its hostname to <code>OUTREACH_ALLOWED_HOSTS</code>, and protect it with <code>OUTREACH_APP_PASSWORD</code>.</p>
+<p>Google: create a Web application OAuth client, enable Gmail API, configure the consent screen and test users. Set <code>OUTREACH_GOOGLE_CLIENT_ID</code> and <code>OUTREACH_GOOGLE_CLIENT_SECRET</code>. Register callback <code>{{ public_url or 'https://YOUR-APP' }}/accounts/oauth/gmail/callback</code>.</p>
+<p>Zoho: create a Server-based application in the API Console for your account region. Set <code>OUTREACH_ZOHO_CLIENT_ID</code> and <code>OUTREACH_ZOHO_CLIENT_SECRET</code>. Register callback <code>{{ public_url or 'https://YOUR-APP' }}/accounts/oauth/zoho/callback</code>.</p>
+{% if public_url and not https_seen %}<p class="warning">The backend is not recognizing the HTTPS connection. Ask the host administrator to configure its trusted proxy addresses in <code>FORWARDED_ALLOW_IPS</code>. Observed connection peer: {{ peer }}. Confirm this is the hosting proxy before trusting it. Workspace cookies remain Secure.</p>{% endif %}
+<p>Store client secrets in the host environment, never browser forms or chat. Read <code>docs/OAUTH_SETUP.md</code> for scopes, provider limits and live test steps.</p></details>
+{% endblock %}

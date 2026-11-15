@@ -1,0 +1,322 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Disposable guided workspace QA</title>
+<style>body{font:14px system-ui;margin:16px}iframe{display:block;width:390px;height:844px;border:1px solid #ddd}pre{white-space:pre-wrap}</style>
+<pre id="result">RUNNING</pre><iframe id="app" title="Fictional workspace test"></iframe>
+<script>
+(async () => {
+  const frame=document.getElementById('app'), report=document.getElementById('result'), checks=[];
+  const assert=(ok, message)=>{if(!ok) throw Error(message); checks.push(message);report.textContent='RUNNING\n'+checks.length+' checks: '+message;};
+  const load=path=>new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);frame.src=path;});
+  const clickLoad=button=>new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);button.click();});
+  const fill=(form,name,value)=>{form.querySelector(`[name="${name}"]`).value=value;form.querySelector(`[name="${name}"]`).dispatchEvent(new Event('input',{bubbles:true}));};
+  const state=async()=>fetch('/qa/state').then(r=>r.json());
+  const waitFor=async(test)=>{for(let i=0;i<100;i++){if(test())return;await new Promise(r=>setTimeout(r,100));}throw Error('Timed out waiting for live feedback');};
+  const progress=async(status)=>fetch('/qa/progress',{method:'POST',body:new URLSearchParams({run_id:savedPath.split('/').pop(),status})});
+  const audit=(d,name)=>{
+    assert(d.documentElement.scrollWidth<=d.defaultView.innerWidth, name+' has no horizontal overflow');
+    const missing=[...d.querySelectorAll('input:not([type=hidden]),textarea,select')].filter(e=>!e.labels.length&&!e.getAttribute('aria-label'));
+    assert(missing.length===0,name+' inputs have labels');
+  };
+  let d=await load('/research/new'); audit(d,'Audience form');
+  let form=d.querySelector('.audience-form');
+  assert(!form.hasAttribute('data-wizard'),'Audience creation has no wizard steps');
+  assert(form.querySelector('[name=input_mode]').value==='prompt','Audience defaults to overall prompt input');
+  assert([...form.querySelectorAll('details')].every(e=>!e.open),'Detailed inputs and research limits are optional and collapsed');
+  fill(form,'brief','A fictional audience request missing its company, location and contact roles.');
+  d=await clickLoad(form.querySelector('[value=save_prompt]'));
+  assert(d.body.textContent.includes('We need a little more detail'),'Incomplete prompts ask for missing audience essentials');
+  assert(!d.querySelector('#plan-review'),'An incomplete prompt never silently broadens into a research plan');
+  assert((await state()).calls===0,'Targeted clarification makes no provider request');
+  d=await load('/research/new');form=d.querySelector('.audience-form');
+  const goal='Find AI product startups in Bangalore for job opportunities. Contact HR recruiters. <img src=x onerror=alert(1)>';
+  fill(form,'brief',goal);
+  fill(form,'target','0');form.querySelector('[value=save_prompt]').click();
+  assert(form.querySelector('[name=target]').closest('details').open&&d.activeElement.name==='target','Invalid optional limits are revealed and focused');
+  // This success fixture has one HR contact; Beacon's support inbox is ineligible.
+  // The Python acceptance suite separately covers searching until the budget stops.
+  fill(form,'target','1');fill(form,'budget','.20');
+  // Keep an unused draft to cover the separately consented optional paid planner.
+  const draftSave=form.querySelector('[value=save_prompt]');draftSave.value='save';
+  d=await clickLoad(draftSave);audit(d,'Saved audience');
+  let current=await state();assert(current.calls===0&&current.runs.every(r=>r.spent===0),'Saving never calls a provider or reserves spending');
+  assert(d.body.textContent.includes('Your audience is saved'),'Saved state has a separate next action');
+  assert(d.querySelector('.audience-form [name=contact_roles][value=hr]').checked,'The overall prompt derives the requested HR role');
+  assert(!d.querySelector('.audience-form [name=brief] img'),'User text does not create HTML');
+  const savedPath=frame.contentWindow.location.pathname;
+  frame.contentWindow.sessionStorage.setItem('outreach-intake:'+savedPath,JSON.stringify({brief:'stale browser values',budget:'9999'}));
+  d=await load(savedPath);
+  assert(d.querySelector('.audience-form [name=brief]').value===goal,'Server-saved values beat stale browser drafts');
+  assert(!d.querySelector('[name=planning_confirm]').checked,'Paid consent is never restored');
+  let editor=d.querySelector('.audience-form');
+  fill(editor,'brief',goal+' Unsaved scope change.');
+  d=await load(savedPath); editor=d.querySelector('.audience-form');
+  assert(editor.querySelector('[name=brief]').value===goal+' Unsaved scope change.','Unsubmitted edits survive a refresh of the same version');
+  assert(d.querySelector('[data-paid-planning] [value=plan]').disabled,'Unsaved edits block paid planning of stale preferences');
+  fill(editor,'brief',goal);
+  assert(!d.querySelector('[data-paid-planning] [value=plan]').disabled,'Restoring saved preferences unlocks the separate consent step');
+  const paid=d.querySelector('[name=planning_confirm]').closest('form');
+  paid.querySelector('[name=planning_confirm]').click();
+  d=await clickLoad(paid.querySelector('[value=plan]'));
+  for(let i=0;i<30&&!d.querySelector('[name=summary]');i++) d=await load(savedPath);
+  assert(!!d.querySelector('[name=summary]'),'Explicit fake paid planning reaches plan review');
+  const approval=d.querySelector('#plan-review');
+  approval.querySelector('[name=confirm]').click();
+  d=await clickLoad(approval.querySelector('button'));
+  for(let i=0;i<40&&!d.querySelector('.lead-selection');i++) d=await load(savedPath);
+  assert(!!d.querySelector('.lead-selection'),'Independent plan approval reaches real lead review');
+  assert(d.body.textContent.includes('How this research works'),'New audiences explain the staged research flow');
+  assert(!!d.querySelector('[data-summary=email_count]'),'Research displays distinct email counts separately from company counts');
+  assert(!!(d.querySelector('#contact-review').compareDocumentPosition(d.querySelector('#research-details')) & 4),'Contact results appear before request details');
+  assert(!d.querySelector('#research-details').open,'Routine request details stay collapsed');
+  assert(d.querySelectorAll('[data-summary=email_count]').length===1,'Published email count appears once');
+  assert(d.body.textContent.includes('Company suggestions and website checks'),'Discovered names keep their website-check evidence');
+  audit(d,'Lead review');
+  assert(!!d.querySelector('a[href*="/workspace/audience/"]'),'Audience removal is visible beside its status');
+  // Results appear incrementally; finish the genuine fake worker before simulating status.
+  let finishedResearch=false;
+  for(let i=0;i<100;i++){
+    const savedStatus=await fetch(savedPath+'/status').then(r=>r.json());
+    if(!savedStatus.active){finishedResearch=true;break;}
+    await new Promise(r=>setTimeout(r,100));
+  }
+  assert(finishedResearch,'The fake research worker finishes before progress simulation');
+  await progress('running');d=await load(savedPath);
+  const live=d.querySelector('[data-research-progress]');
+  await waitFor(()=>live.querySelector('[data-progress-detail]').textContent.includes('fictional company'));
+  assert(!live.hidden,'Active research shows its current operation');
+  const selected=d.querySelector('[name=lead_ids]');selected.checked=true;selected.dispatchEvent(new Event('change',{bubbles:true}));
+  await progress('completed');
+  await waitFor(()=>!live.querySelector('[data-progress-open]').hidden);
+  assert(frame.contentDocument===d&&selected.checked,'Live completion preserves page state and selected leads');
+  assert(live.querySelector('.work-spinner').hidden&&d.querySelector('[data-run-status]').textContent==='Finished'&&d.querySelector('[data-research-pause]').hidden,'Completion replaces the loading state with a saved-result action');
+  current=await state();assert(current.sent===0,'The journey sends no emails');
+  d=await load('/campaigns/new');audit(d,'New campaign');
+  assert(d.querySelectorAll('[name=message_prompt]').length===1&&!d.querySelector('[name=topic],[name=closing]'),'Campaign creation uses one message instruction editor');
+  d=await load('/setup');audit(d,'Connections');
+  assert([...d.querySelectorAll('input[type=password]')].every(e=>!e.value),'Credential values are never rendered');
+  d=await load('/accounts');audit(d,'Email connection');
+  const account=d.querySelector('[data-provider-form]'), provider=account.querySelector('[name=provider]');
+  assert(account.querySelector('[data-provider-help=zoho]').hidden,'Gmail shows Gmail instructions only');
+  provider.value='zoho';provider.dispatchEvent(new Event('change'));
+  assert(!account.querySelector('[data-provider-help=zoho]').hidden&&account.querySelector('[data-provider-help=gmail]').hidden,'Zoho selection shows the matching owner steps');
+  d=await load('/');audit(d,'Home');
+  assert(d.querySelector('.page-guide').textContent.includes('for free'),'Home explains the cost and effect of its main action');
+  await waitFor(()=>d.querySelector('[data-activity-label]').textContent==='No background tasks');
+  assert(d.defaultView.getComputedStyle(d.querySelector('[data-activity-label]')).display!=='none','Activity status stays visible on mobile');
+  const realFetch=d.defaultView.fetch.bind(d.defaultView);
+  d.defaultView.fetch=(url,options)=>url==='/workspace/activity'?Promise.reject(new Error('Fictional interruption')):realFetch(url,options);
+  d.dispatchEvent(new Event('visibilitychange'));
+  await waitFor(()=>d.querySelector('[data-activity-label]').textContent.includes('interrupted'));
+  assert(true,'Interrupted live updates are visible and do not claim work finished');
+  d.defaultView.fetch=realFetch;d.dispatchEvent(new Event('visibilitychange'));
+  await waitFor(()=>d.querySelector('[data-activity-label]').textContent==='No background tasks');
+  assert(true,'Live activity recovers when connectivity returns');
+  const homeForm=d.querySelector('.goal-start');fill(homeForm,'brief','A fictional audience goal for testing visible save feedback.');
+  const saveButton=homeForm.querySelector('button');saveButton.name='action';saveButton.value='save';
+  const Submit=d.defaultView.SubmitEvent;
+  homeForm.dispatchEvent(new Submit('submit',{bubbles:true,cancelable:true,submitter:saveButton}));
+  assert(!d.querySelector('[data-action-feedback]').hidden&&homeForm.getAttribute('aria-busy')==='true','A submitted save shows immediate accessible feedback');
+  assert(saveButton.value==='save'&&!saveButton.disabled,'Loading feedback preserves the submitted action value');
+  const duplicate=new Submit('submit',{bubbles:true,cancelable:true,submitter:saveButton});homeForm.dispatchEvent(duplicate);
+  assert(duplicate.defaultPrevented,'A second submission is blocked while the first is pending');
+  d.defaultView.dispatchEvent(new d.defaultView.PageTransitionEvent('pageshow',{persisted:true}));
+  assert(d.querySelector('[data-action-feedback]').hidden&&!homeForm.hasAttribute('aria-busy'),'Back navigation resets the loading state');
+  d=await load('/research/new');
+  const initialState=await state();
+  const draftForm=d.querySelector('.audience-form');fill(draftForm,'brief','A disposable audience used to check the delete confirmation journey.');
+  d=await clickLoad(draftForm.querySelector('[value=save_prompt]'));
+  const draftPath=frame.contentWindow.location.pathname;
+  d=await load('/workspace/audience/'+draftPath.split('/').pop()+'/remove');audit(d,'Delete confirmation');
+  assert(!!d.querySelector('[name=confirm_delete]'),'Deletion needs explicit confirmation');
+  d.querySelector('[name=confirm_delete]').click();d=await clickLoad(d.querySelector('[value=delete]'));
+  assert(d.body.textContent.includes('Unused draft deleted'),'Confirmed draft deletion shows the outcome');
+  const finalState=await state();assert(finalState.calls===initialState.calls&&finalState.sent===0,'Removal and progress use no provider or email operation');
+  d=await load(savedPath+'/edit');audit(d,'Edit audience');
+  assert(d.querySelector('.audience-form')&&!d.querySelector('[data-wizard]'),'Audience editing uses the same prompt-first form without wizard steps');
+  assert(d.body.textContent.includes('original')&&d.querySelector('[value=save_prompt]').textContent.includes('Save next version of this audience'),'Started work explains saving a free revision');
+  const beforeRevision=await state(), revisionForm=d.querySelector('.audience-form');
+  fill(revisionForm,'geography','Anywhere');
+  d=await clickLoad(revisionForm.querySelector('[value=save_details]'));
+  const revisionPath=frame.contentWindow.location.pathname;
+  assert(revisionPath!==savedPath&&d.body.textContent.includes('Plan prepared for free'),'Saving complete revisions creates a new free plan with clear feedback');
+  assert((await state()).calls===beforeRevision.calls,'Editing started research makes no provider request');
+  d=await load(revisionPath+'/edit');audit(d,'Edit draft');
+  assert(d.querySelector('[value=save_prompt]').textContent.includes('Save next version'),'Prepared plans preserve their scope by editing into a new version');
+  const zero=await fetch('/qa/zero-result',{method:'POST'}).then(r=>r.json());
+  d=await load('/research/'+zero.id);
+  assert(d.body.textContent.includes('All 2 requests finished. Nothing is waiting'),'Finished calls are not shown as a pending queue');
+  const beforeRecovery=await state();
+  d=await clickLoad(d.querySelector('form[action$="/recover-discovery"] button'));
+  assert(d.body.textContent.includes('company suggestions recovered from saved results'),'Cached recovery explains its result');
+  assert(d.querySelector('.lead-selection').textContent.includes('Contact checks not finished'),'Unprocessed suggestions are not presented as found email contacts');
+  assert((await state()).calls===beforeRecovery.calls,'Recovering cached suggestions makes no provider request');
+
+  const batchStart=await state();
+  const campaignCreated=await fetch('/campaigns/new',{method:'POST',body:new URLSearchParams({name:'Fictional more contacts',purpose:'job search'})});
+  assert(campaignCreated.ok,'A campaign can be prepared before connecting email');
+  const campaignPath='/campaigns/fictional-more-contacts';
+  d=await load(campaignPath);audit(d,'Campaign controls');
+  assert(d.querySelector('a[href="'+campaignPath+'/research"]').textContent.includes('Find more contacts'),'Find more contacts is visible on the campaign dashboard');
+  assert(d.body.textContent.includes('Edit campaign')&&d.body.textContent.includes('Delete / archive'),'Campaign edit and removal buttons are visible');
+  d=await load(campaignPath+'/research?source='+savedPath.split('/').pop());audit(d,'Additional research batch');
+  const batchForm=d.querySelector('.audience-form');
+  assert(batchForm.querySelector('[name=brief]').value===goal,'Additional research reuses the chosen audience');
+  assert(!batchForm.querySelector('[name=target]').closest('details').open,'Batch limits are available in a collapsed optional section');
+  fill(batchForm,'target','12');fill(batchForm,'budget','0.75');
+  d=await clickLoad(batchForm.querySelector('[value=save_prompt]'));
+  assert(d.body.textContent.includes('Plan prepared for free'),'An additional prompt-based batch saves a free plan with clear feedback');
+  assert(d.body.textContent.includes('Research for')&&d.body.textContent.includes('Find more contacts'),'The research result keeps its campaign context');
+  assert((await state()).calls===batchStart.calls,'Preparing an additional campaign batch makes no provider request');
+  d=await load(campaignPath+'/research');
+  assert(d.body.textContent.includes('Your research batches')&&d.body.textContent.includes('Open results / progress'),'Campaign research retains saved batches and progress links');
+  assert((await state()).sent===0,'Additional research setup sends no emails');
+
+
+  // Saved audience handoff and campaign files, with no provider or mail calls.
+  const handoffStart=await state();
+  d=await load(campaignPath+'?tab=audience');audit(d,'Campaign audience handoff');
+  assert(!!d.querySelector('#add-contacts [name=lead_ids]'),'Campaign shows found emails directly without an audience selection page');
+  assert(d.querySelector('#add-contacts [name=campaign_id]').value===campaignPath.split('/').pop(),'Inline email selection already knows its destination campaign');
+  assert([...d.querySelectorAll('details')].some(el=>el.querySelector('summary')?.textContent.includes('Other ways')&&!el.open),'Saved list tools are optional and collapsed');
+  assert(!!d.querySelector('a[href="'+campaignPath+'/audience"]'),'Add a saved audience is visible in the campaign');
+  d=await load(savedPath+'/use');audit(d,'Audience handoff before approval');
+  assert(!!d.querySelector('[name=lead_ids]'),'Found emails are available without separate approval');
+  d=await load(savedPath);
+  const approvalForm=d.querySelector('.lead-selection');
+  const approvedLead=approvalForm.querySelector('[name=lead_ids]');
+  approvedLead.checked=true;approvedLead.dispatchEvent(new Event('change',{bubbles:true}));
+  fill(approvalForm,'campaign_id',campaignPath.split('/').pop());
+  d=await clickLoad(approvalForm.querySelector('[value=existing]'));
+  assert(d.body.textContent.includes('1 contacts added'),'Found emails add directly without approval or review note');
+  assert(!!d.querySelector('a[href="'+campaignPath+'/attachments"]'),'Attachments are visible in campaign navigation');
+  d=await load(campaignPath+'/audience');audit(d,'Saved audience picker');
+  assert(d.body.textContent.includes('ready to add'),'Saved audiences show how many reviewed contacts are ready');
+  d=await load(savedPath+'/use?campaign_id='+campaignPath.split('/').pop());audit(d,'Ready audience selection');
+  assert(!!d.querySelector('[name=lead_ids]:checked'),'Ready contacts are visibly selected');
+  assert(d.querySelector('[name=campaign_id]').value===campaignPath.split('/').pop(),'The destination campaign is selected');
+  d=await clickLoad(d.querySelector('[value=existing]'));
+  assert(d.body.textContent.includes('contacts added from'),'Adding the audience confirms the saved contacts');
+  assert(d.body.textContent.includes('Research evidence'),'Campaign contacts link back to their research evidence');
+  d=await load(campaignPath+'/message');audit(d,'Message attachment entry');
+  assert(d.body.textContent.includes('Add attachments'),'Message page exposes attachment management');
+  assert(d.querySelectorAll('[name=message_prompt]').length===1&&!d.querySelector('[name=topic],[name=closing]'),'Campaign message uses one instruction editor without separate exact-line fields');
+  const messageForm=d.querySelector('[name=message_prompt]').closest('form');
+  assert(messageForm.dataset.serverValues==='true'&&new URL(messageForm.action).pathname===campaignPath+'/message','The editor saves to its own campaign and loads server-saved instructions');
+  const messagePrompt='Introduce our fictional textile business and ask whether the recipient would like a sample. Keep the opening concise.';
+  const exactLines='Please reply if you would like a sample.\nRegards, Fictional Sender';
+  fill(messageForm,'message_prompt',messagePrompt+'\n\n'+exactLines);
+  const instructionEditor=messageForm.querySelector('[name=message_prompt]');
+  instructionEditor.setSelectionRange(messagePrompt.length+2,instructionEditor.value.length);
+  messageForm.querySelector('[data-keep-selection]').click();
+  const savedEditor=messagePrompt+'\n\n[KEEP]\n'+exactLines+'\n[/KEEP]';
+  assert(instructionEditor.value===savedEditor,'Keep exactly protects the selected wording and its original line breaks in the same editor');
+  d=await clickLoad(messageForm.querySelector('button:not([type=button])'));
+  assert(d.querySelector('[name=message_prompt]').value===savedEditor,'The instruction editor and protected lines persist exactly after saving');
+  frame.contentWindow.sessionStorage.setItem('outreach-intake:'+campaignPath+'/message',JSON.stringify({message_prompt:'Stale instructions from an older campaign'}));
+  d=await load(campaignPath+'/message');
+  assert(d.querySelector('[name=message_prompt]').value===savedEditor,'Refreshing does not replace campaign instructions with stale browser text');
+  const otherPrompt='Write a concise professional networking email to industry researchers.\n[KEEP]\nI would appreciate the opportunity to learn from your experience.\n[/KEEP]';
+  const otherResponse=await fetch('/campaigns/new',{method:'POST',body:new URLSearchParams({name:'Fictional isolated networking',brief_mode:'structured',message_prompt:otherPrompt})});
+  assert(otherResponse.ok&&new URL(otherResponse.url).pathname==='/campaigns/fictional-isolated-networking','A distinct networking campaign is created without altering the original campaign');
+  const otherPath='/campaigns/fictional-isolated-networking/message';
+  for(let switchIndex=0;switchIndex<2;switchIndex++){
+    d=await load(otherPath);
+    assert(d.querySelector('[name=message_prompt]').value===otherPrompt,'Switching to networking loads only its own saved instructions');
+    frame.contentWindow.sessionStorage.setItem('outreach-intake:'+otherPath,JSON.stringify({message_prompt:savedEditor}));
+    d=await load(otherPath);
+    assert(d.querySelector('[name=message_prompt]').value===otherPrompt,'Networking refresh rejects another campaign’s cached instructions');
+    d=await load(campaignPath+'/message');
+    assert(d.querySelector('[name=message_prompt]').value===savedEditor,'Switching back preserves the original campaign instructions and protected wording');
+  }
+  assert((await state()).calls===handoffStart.calls,'Saving and switching campaign instruction editors uses no provider calls');
+  d=await load(campaignPath+'/attachments');audit(d,'Attachment upload');
+  const fileForm=d.querySelector('form[enctype="multipart/form-data"]');
+  const transfer=new d.defaultView.DataTransfer();
+  transfer.items.add(new d.defaultView.File(['Fictional brochure bytes'],'Brochure.pdf',{type:'application/pdf'}));
+  fileForm.querySelector('[type=file]').files=transfer.files;
+  d=await clickLoad(fileForm.querySelector('button'));audit(d,'Uploaded campaign attachment');
+  assert(d.body.textContent.includes('Brochure.pdf')&&d.body.textContent.includes('1 attachments added'),'Uploading through the browser saves the selected file');
+  const downloadLink=d.querySelector('a[href$="/download"]');
+  assert(await fetch(downloadLink.href).then(r=>r.text())==='Fictional brochure bytes','Downloaded attachment matches the uploaded bytes');
+  d=await load(campaignPath+'/send');audit(d,'Launch attachment summary');
+  assert(d.body.textContent.includes('Brochure.pdf'),'Launch shows the campaign attachments even before drafts are ready');
+  const afterHandoff=await state();
+  assert(afterHandoff.calls===handoffStart.calls&&afterHandoff.sent===0,'Audience linking and file uploads make no provider or email requests');
+
+  d=await load('/workspace/audience/'+zero.id+'/remove');audit(d,'Researched audience deletion');
+  assert(d.body.textContent.includes('Delete audience')&&d.body.textContent.includes('Deleted audiences'),'Researched audiences have an explicit delete action');
+  d.querySelector('[name=confirm_delete]').click();
+  d=await clickLoad(d.querySelector('[value=delete]'));
+  assert(d.body.textContent.includes('Audience deleted from active work'),'Researched audience deletion confirms the outcome');
+  d=await load('/research?view=deleted');
+  assert(!!d.querySelector('a[href="/research/'+zero.id+'"]'),'Deleted audiences can be found and restored');
+  d=await load('/workspace/audience/'+zero.id+'/remove');
+  d=await clickLoad(d.querySelector('[value=restore]'));
+  assert((await state()).calls===batchStart.calls&&d.body.textContent.includes('Restored'),'Restoring researched audiences makes no provider request');
+  const continuityStart=await state();
+  d=await load(savedPath+'/edit');audit(d,'Audience version editor');
+  form=d.querySelector('form.audience-form');
+  fill(form,'company_type','Software product startups');
+  d=await clickLoad(form.querySelector('[value=save_details]'));
+  const latestPath=new URL(d.URL).pathname;
+  assert(latestPath!==savedPath&&d.body.textContent.includes('research versions'),'Editing saves a new version inside audience history');
+  assert(d.body.textContent.includes('Last saved run'),'Audience shows the last saved run');
+  assert(d.body.textContent.includes('Plan prepared for free')&&d.querySelector('#plan-review'),'Saving complete detailed preferences prepares a free plan in one action');
+  assert(!d.querySelector('[name=confirm]').checked,'Saving a free plan never restores paid research consent');
+  assert((await state()).calls===continuityStart.calls,'Free planning makes no provider request');
+  d=await load(latestPath+'/use');audit(d,'Earlier approved contacts');
+  assert(!!d.querySelector('[name=lead_ids]:checked'),'The newest version can use approved contacts from an earlier run');
+  d=await load(latestPath);audit(d,'Research continuation');
+  assert(d.querySelector('[name=budget]')&&d.querySelector('[action$="/limits"]'),'Research limits can be edited within the same run');
+  const limits=d.querySelector('[action$="/limits"]');
+  limits.closest('details').open=true;
+  fill(limits,'budget','0.75');limits.querySelector('[name=confirm]').click();
+  d=await clickLoad(limits.querySelector('button'));
+  assert(d.body.textContent.includes('Limits saved'),'Budget edits save with explicit confirmation');
+  assert((await state()).calls===continuityStart.calls&&(await state()).sent===0,'Audience continuation setup has no paid or mail side effects');
+  d=await load('/research');audit(d,'Grouped audience cards');
+  assert(!d.querySelector('.work-card a[href="'+savedPath+'"]'),'Prior audience versions do not appear as duplicate cards');
+  assert(!!d.querySelector('.work-card a[href="'+latestPath+'"]'),'The audience card opens the latest version');
+
+  // Exercise generation and saved review with the disposable fake LLM only.
+  d=await load(campaignPath+'/drafts');
+  const generateForm=d.querySelector('form[action$="/draft-all"]');
+  assert(!generateForm.querySelector('button').disabled,'The current campaign is ready for fictional generation');
+  d=await clickLoad(generateForm.querySelector('button'));
+  let reviewPath='';
+  for(let i=0;i<40;i++){
+    d=await load(campaignPath+'/drafts');
+    const link=d.querySelector('tr[data-draft-id] a[href^="/drafts/"]');
+    if(link){reviewPath=new URL(link.href).pathname;break;}
+    await new Promise(r=>setTimeout(r,100));
+  }
+  assert(!!reviewPath,'Fictional generation creates a campaign draft ready for review');
+  d=await load(reviewPath);audit(d,'Generated draft review');
+  assert(d.body.textContent.includes('Generated for campaign'),'Draft review shows generation traceability');
+  // Broader read-only UI audit on the same fictional workspace, including narrow phones.
+  const luminance=color=>{
+    const channels=color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});
+    return .2126*channels[0]+.7152*channels[1]+.0722*channels[2];
+  };
+  const contrast=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+  const routes=['/','/research','/research/new','/lists','/campaigns','/campaigns/new','/accounts','/accounts/oauth','/setup','/inbox','/suppressions',campaignPath,campaignPath+'/message',campaignPath+'?tab=audience',campaignPath+'/drafts',campaignPath+'/send',campaignPath+'/history',campaignPath+'/settings',campaignPath+'/attachments',reviewPath];
+  for(const width of [320,390,1440]){
+    frame.style.width=width+'px';
+    for(const route of routes){
+      d=await load(route);audit(d,route+' at '+width+'px');
+      assert(!d.body.textContent.includes('Internal Server Error')&&!!d.querySelector('main'),route+' renders its workspace');
+    }
+  }
+  const win=d.defaultView,bodyStyle=win.getComputedStyle(d.body);
+  assert(contrast(bodyStyle.color,bodyStyle.backgroundColor)>=4.5,'Body text meets normal-text contrast');
+  const probe=d.createElement('p');probe.className='muted';probe.textContent='Readability probe';d.querySelector('main').append(probe);
+  assert(contrast(win.getComputedStyle(probe).color,bodyStyle.backgroundColor)>=4.5,'Secondary text meets normal-text contrast');probe.remove();
+  for(const selector of ['button:not(:disabled)', '.button']){
+    const element=[...d.querySelectorAll(selector)].find(e=>e.getBoundingClientRect().width);
+    if(element){const s=win.getComputedStyle(element);assert(contrast(s.color,s.backgroundColor)>=4.5,'Visible '+selector+' text meets contrast');}
+  }
+  const skip=d.querySelector('.skip-link');skip.focus();
+  assert(d.activeElement===skip&&skip.getBoundingClientRect().top>=0,'Keyboard skip link becomes visible on focus');
+  assert((await state()).sent===0,'Expanded UI audits never send emails');
+  report.textContent='PASS\n'+checks.join('\n');
+})().catch(error=>{document.getElementById('result').textContent='FAIL\n'+error.stack;});
+</script></html>

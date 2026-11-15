@@ -1,0 +1,23 @@
+{# Depth, what it will cost, consent and the start button. `many`: the list form. #}
+{% set depth = options.get('depth', 'thorough') %}
+<section class="start-step start-go" aria-labelledby="go-heading">
+  <h2 id="go-heading" class="visually-hidden">Start</h2>
+  <div class="depth-choices" role="radiogroup" aria-label="How deep to research">
+    <label class="depth"><input type="radio" name="depth" value="thorough" {% if depth == 'thorough' %}checked{% endif %}> <strong>Thorough</strong><span class="option-detail">Person, company, growth and your goal, until it has 3 facts from 2 angles.</span></label>
+    <label class="depth"><input type="radio" name="depth" value="quick" {% if depth == 'quick' %}checked{% endif %}> <strong>Quick</strong><span class="option-detail">One news search and two pages. Faster, fewer facts to choose from.</span></label>
+  </div>
+  {% if mode == 'fixture' %}
+  <p class="cost-line">Free. Example data, no paid calls.</p>
+  {% else %}
+  <p class="cost-line" data-cost-line data-costs='{{ costs|tojson }}' data-many="{{ 1 if many else 0 }}" aria-live="polite">
+    <strong data-cost-total>About ${{ '%.3f'|format(costs.thorough + costs.email) }}{{ ' each' if many }}</strong>
+    <span data-cost-detail>{{ 'for' if many else 'for this prospect' }}</span>
+  </p>
+  <p class="hint">That's the usual cost. A prospect who is hard to research can never cost more than ${{ '%.2f'|format(limits.budget_micro / 1000000) }}{{ ' each' if many }}: research stops there, or at {{ limits.max_search_queries }} search queries, {{ limits.max_pages }} page reads or {{ (limits.wall_seconds / 60)|round|int }} minutes.</p>
+  {% if not providers_ready %}<p class="notice notice-error">Research keys are not configured on this server.</p>{% endif %}
+  <label class="consent-label"><input type="checkbox" name="live_consent" required> {{ 'I authorize this research on every prospect in the list.' if many else 'I authorize this research.' }}</label>
+  {% endif %}
+  <div class="form-actions">
+    <button type="submit" class="primary-action" {% if mode == 'live' and not providers_ready %}disabled{% endif %}>{{ 'Start research on the list' if many else 'Start research' }}</button>
+  </div>
+</section>

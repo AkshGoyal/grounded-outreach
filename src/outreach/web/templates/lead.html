@@ -1,0 +1,38 @@
+{% extends 'base.html' %}{% block body %}<a class="breadcrumb" href="/research/{{ lead.run_id }}">← Back to research</a>
+<div class="section-heading"><h1>{{ lead.company }}</h1><a class="button secondary" href="{{ "/research/"~lead.run_id~"/edit" if feedback_enabled else "#app-update" }}">Edit audience</a></div>
+<p>
+<a href="{{ lead.website }}" target="_blank" rel="noopener noreferrer">{{ lead.website }}</a> <span class="badge">{{ lead.review_status }}</span>
+</p>
+<p>{{ lead.fit_summary }}</p>{% if lead.prior_campaigns %}
+<div class="notice">This company or address already belongs to: {% for c in lead.prior_campaigns %}<a href="/campaigns/{{ c.campaign_id }}">{{ c.name }}</a>{{ ', ' if not loop.last else '' }}{% endfor %}. Changing the selected email affects future enrollments; existing campaign contacts keep their saved address.</div>{% endif %}{% for flag in lead.flags %}
+<p class="warning">{{ flag }}</p>{% endfor %}
+<div class="panel">
+<h2>Evidence for your criteria</h2>{% for f in lead.facts %}
+<article class="evidence">
+<strong>{{ f.criterion }}</strong> <span class="badge">{{ f.status }}</span>{% if f.quote %}<blockquote>{{ f.quote }}</blockquote>
+<a href="{{ f.source_url }}" target="_blank" rel="noopener noreferrer">Open source</a>{% endif %}</article>{% endfor %}</div>
+<form class="panel" method="post" action="/leads/review">
+<input type="hidden" name="lead_ids" value="{{ lead.id }}">
+<input type="hidden" name="return_to" value="/leads/{{ lead.id }}">
+<h2>Choose a contact for this outreach</h2>{% if audience %}<p>Accepted roles: {% for role in audience.contact_roles %}<span class="badge">{{ contact_roles[role] }}</span> {% endfor %}</p><p class="muted">Check the quoted context for the role and ownership. Department addresses are not named individual contacts; a support inbox does not become HR because it is published.</p>{% endif %}<p class="muted">Publication is source evidence, not proof of delivery. Check displayed addresses against clickable mail links.</p>{% for e in lead.emails %}<label class="check">
+<input type="radio" name="email" value="{{ e.value }}" {% if lead.selected_email==e.value or (not lead.selected_email and loop.first) %}checked{% endif %}>{{ e.value }}</label>{% if e.role_hint %}<small class="field-help">{{ e.role_hint }}{% if e.contact_name %} · {{ e.contact_name }}{% endif %}</small>{% if e.role_quote %}<p class="quote">{{ e.role_quote }}</p><a href="{{ e.role_source_url }}" target="_blank" rel="noopener noreferrer">Check role evidence</a>{% endif %}{% endif %}
+{% if e.match_kind %}<p class="badge">{{ {'requested_role':'Requested role supported','general_fallback':'General business inbox fallback','unconfirmed':'Role or ownership needs review'}.get(e.match_kind,e.match_kind) }}</p>{% endif %}
+{% if e.ownership_quote %}<blockquote>{{ e.ownership_quote }}</blockquote><a href="{{ e.ownership_source_url }}" target="_blank" rel="noopener noreferrer">Check address ownership evidence</a>{% endif %}
+<blockquote>{{ e.quote }}</blockquote>
+{% if e.publication_sources|length>1 %}<details><summary>All publication sources ({{ e.publication_sources|length }})</summary>{% for source in e.publication_sources %}<p><a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.scope }} source</a> · {{ source.retrieved_at }}</p><blockquote>{{ source.quote }}</blockquote>{% endfor %}</details>{% endif %}
+<p class="muted">
+<a href="{{ e.source_url }}" target="_blank" rel="noopener noreferrer">Published on this page</a> · Retrieved {{ e.retrieved_at }}</p>{% else %}
+<p>No relevant published email was found in the checked sources. This company cannot be approved for email outreach.</p>{% endfor %}<label>Review note<textarea name="note" rows="2">{{ lead.review_note }}</textarea>
+</label>
+<label class="check">
+<input name="confirmed" type="checkbox">I verified company identity, contact ownership and campaign fit.</label>
+<button name="action" value="approve">Approve lead</button> <button name="action" value="reject" class="secondary">Remove lead</button>
+</form>
+<details class="panel">
+<summary>Retrieved source pages ({{ lead.sources|length }})</summary>{% for s in lead.sources %}
+<details>
+<summary>{{ s.title or s.url }}</summary>
+<a href="{{ s.url }}" target="_blank" rel="noopener noreferrer">Open page</a>
+<pre class="source-text">{{ s.text }}</pre>
+</details>{% endfor %}</details>
+{% endblock %}

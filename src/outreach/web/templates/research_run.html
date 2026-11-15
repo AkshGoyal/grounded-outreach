@@ -1,0 +1,92 @@
+{% extends 'base.html' %}{% block title %}{{ run.title }} · Research{% endblock %}{% block head %}{% if active %}{% if feedback_enabled %}<noscript><meta http-equiv="refresh" content="5"></noscript>{% else %}<meta http-equiv="refresh" content="5">{% endif %}{% endif %}{% endblock %}{% block body %}<a class="breadcrumb" href="/research">← Research</a>
+<div class="section-heading">
+<div>
+<p class="eyebrow">AUDIENCE {{ run.id[:6] }} · {{ run.purpose }}</p>
+<h1>{{ run.title }}</h1>
+</div>
+<div class="actions"><a class="button secondary" href="{{ "/research/"~run.id~"/edit" if feedback_enabled else "#app-update" }}">Edit audience</a><a class="button secondary remove-link" href="{{ "/workspace/audience/"~run.id~"/remove" if feedback_enabled else "#app-update" }}">{{ "Restore / delete" if run.archived else "Delete / archive" }}</a><span class="badge" data-run-status>{{ "Deleted" if run.deleted else run.status|friendly_status }}</span></div>
+</div>
+
+{% if continuation %}{% include '_research_continue.html' %}{% endif %}
+{% if campaign_context %}<p class="notice">Research for <a href="/campaigns/{{ campaign_context.id }}/research">{{ campaign_context.name }}</a>. Select found contacts below to add them to this campaign. <a class="button secondary" href="/campaigns/{{ campaign_context.id }}/research">Find more contacts</a></p>{% endif %}
+{% if feedback_enabled %}{% include "_live_research.html" %}{% if run.archived %}<p class="notice">This audience is archived. Its results and history are kept. <a href="/workspace/audience/{{ run.id }}/remove">Restore it to continue</a>.</p>{% endif %}{% endif %}{% if not active or not feedback_enabled %}<p class="notice" role="status">{{ run.progress or ('Audience draft saved. No research has started.' if run.status=='draft' else 'Your saved work remains available below.') }}</p>{% endif %}
+
+{% if run.error %}
+<section class="warning" role="alert"><h2>Your audience is safe. Research needs attention.</h2><p>{{ run.error }}</p>{% if 'connection failed' in run.error|lower %}<p>The provider could not be reached. Check the laptop connection and restart from the desktop launcher before continuing.</p>{% endif %}<p>The amount shown includes retained reservations, which may differ from actual provider charges. This attempt will not be automatically retried.</p><a class="button secondary" href="/setup">Check connections →</a> {% if run.intake %}<form method="post" action="/research/{{ run.id }}/copy"><button class="secondary">Save a copy of this audience (free)</button></form>{% else %}<a href="/research/new">Save a new audience</a>{% endif %}</section>{% endif %}{% if active %}
+<p>Updates automatically while research is working.</p>{% if run.status=='running' %}
+<form method="post" data-research-pause action="/research/{{ run.id }}/pause">
+<button class="secondary">Pause after this request</button>
+</form>{% endif %}{% endif %}
+{% if work_summary and (run.status!='draft' or run.plan or total_leads) %}
+<section class="panel compact" aria-label="Research results overview">
+<div class="stats">
+<div><small>Distinct published emails</small><strong data-summary="email_count">{{ work_summary.email_count }}</strong></div>
+<div><small>Companies with emails</small><strong data-summary="with_email">{{ work_summary.with_email }}</strong></div>
+<div><small>Companies meeting contact preference</small><strong><span data-summary="target_ready">{{ work_summary.target_ready }}</span> / {{ run.target_count }}</strong></div>
+<div><small>Accounted spend / cap</small><strong><span data-research-spend>${{ '%.4f'|format(run.spent) }}</span> / ${{ '%.2f'|format(run.budget) }}</strong></div>
+</div>
+{% if contact_research_enabled and run.execution.get("strategy_version",2)>=4 %}<p><strong>Requested-role addresses:</strong> <span data-summary="role_matches">{{ work_summary.role_matches }}</span> · <strong>General inbox fallbacks:</strong> <span data-summary="fallbacks">{{ work_summary.fallbacks }}</span> · <strong>Need identity review:</strong> <span data-summary="unconfirmed_contacts">{{ work_summary.unconfirmed_contacts }}</span></p>{% endif %}
+<p class="field-help"><span data-research-count>{{ total_leads }}</span> companies saved. Target: {{ run.target_count }} companies with suitable published contacts. Published emails have not been tested for delivery.</p>
+</section>{% endif %}
+{% if total_leads %}
+<section aria-label="Found contacts"><h2 id="contact-review">Emails found</h2><nav class="review-stages" aria-label="Filter lead results">{% for key,label in lead_stages.items() %}<a href="/research/{{ run.id }}?stage={{ key }}" {% if stage==key %}aria-current="page"{% endif %}>{{ label }} <strong>{{ stage_counts[key] }}</strong></a>{% endfor %}</nav>
+<p class="muted">Select the emails you want and add them to a campaign. Sources are available if you need them.</p>
+<p>Published does not mean delivery-verified. Adding contacts does not send emails.</p>{% if leads %}{% include '_leads.html' %}{% else %}<div class="empty">No companies in this review stage. Choose another filter.</div>{% endif %}</section>{% elif run.status=='completed' %}
+<div class="empty">No companies are ready for review. {% if feedback_enabled %}<a href="/research/{{ run.id }}/edit">Edit your audience</a>{% else %}Load the app update to edit your audience{% endif %} to revise the scope.</div>{% endif %}{% if run.status=='draft' and not run.plan and not run.archived and not run.deleted %}{% if questions %}<details id="audience-planning" class="panel compact"><summary>Before we research</summary><p>Confirm these details so the search follows your intent.</p><ul>{% for question in questions %}<li>{{ question }}</li>{% endfor %}</ul></details>{% endif %}{% if questions %}{% include '_audience_intake.html' %}{% else %}<section id="audience-planning" class="panel compact"><h2>Your saved audience</h2><p>{{ intake.company_type }} · {{ intake.geography }}</p><p>{% for role in intake.contact_roles %}<span class="badge">{{ contact_roles[role] }}</span> {% endfor %}</p><details><summary>Edit audience details</summary>{% include '_audience_intake.html' %}</details></section>{% endif %}{% include '_research_planning.html' %}{% endif %}
+{% if run.plan and not run.approved_at and not active and not run.archived and not run.deleted %}
+<form id="plan-review" class="panel" method="post" action="/research/{{ run.id }}/approve">
+<h2>Review what we will research</h2>
+{% if run.execution.get("strategy_version",2)>=6 %}<p>Research continues toward {{ run.target_count }} companies with suitable published contacts, until the next request cannot fit your approved cap. You can pause at any time. Provider failures or uncertain requests stop for review; known-company lists stop when those companies are checked.</p>{% endif %}
+{% if intake and "other" in intake.contact_roles %}<p class="warning">Custom contact roles need manual review and cannot automatically count as a requested-role match. Choose a supported role or allow general inbox fallbacks if appropriate.</p>{% endif %}
+<label>Research summary<textarea name="summary" rows="3" required>{{ run.plan.summary }}</textarea>
+</label>
+<div class="form-grid">
+<label>Required criteria (one per line)<textarea name="criteria" rows="5" required>{{ run.plan.criteria|join('
+') }}</textarea>
+</label>
+<label>Exclusions (one per line)<textarea name="exclusions" rows="5">{{ run.plan.exclusions|join('
+') }}</textarea>
+</label>
+</div>
+<details><summary>Advanced: edit search queries</summary><div class="form-grid">
+<label>First searches (1–3)<textarea name="queries" rows="3" required>{{ run.plan.queries|join('
+') }}</textarea>
+</label>
+<label>Alternative searches (1–3)<textarea name="alternate_queries" rows="3" required>{{ run.plan.alternate_queries|join('
+') }}</textarea>
+</label>
+</div></details>
+<label class="check">
+<input type="checkbox" name="confirm" required>I approve this plan and authorize research within the remaining ${{ '%.2f'|format([run.budget-run.spent,0]|max) }} of the run cap.</label>
+<button>Approve plan & find leads →</button>
+</form>{% endif %}{% if run.plan and not run.approved_at and not active and not run.archived and not run.deleted %}
+<form class="panel" method="post" action="/research/{{ run.id }}/refine">
+<label>Clarify or change the plan<textarea name="instruction" rows="2" minlength="3" required placeholder="Focus only on manufacturers, and exclude wholesalers.">
+</textarea>
+</label>
+<button class="secondary">Update plan</button>
+<small>Uses an AI request within this run’s cap.</small>
+</form>{% endif %}{% if not continuation and run.approved_at and run.status in ["paused","failed"] and not active and not run.archived %}<form method="post" action="/research/{{ run.id }}/resume"><button class="secondary">Continue approved research (paid checks)</button><p class="field-help">Completed requests stay saved; uncertain requests cannot be replayed.</p></form>{% endif %}{% if run.intake and (run.plan or active or run.status=='failed') %}<details class="panel compact"><summary>Your audience criteria</summary><p>{{ intake.company_type }} · {{ intake.geography }}</p><p>Accepted contacts: {% for role in intake.contact_roles %}<span class="badge">{{ contact_roles[role] }}</span> {% endfor %}</p><p class="muted">{% if feedback_enabled %}<a href="/research/{{ run.id }}/edit">Edit audience</a> to save revised inputs for free.{% else %}Restart from START-OUTREACH.cmd to load audience editing.{% endif %} This run keeps its original plan and spending history.</p></details>{% endif %}{% include '_research_limits.html' %}
+{% if audience_continuity_enabled and run.execution.get("strategy_version",2)<6 and run.status!="draft" %}<p class="notice">This saved run keeps its earlier research strategy. You can continue its approved requests, or <a href="/research/{{ run.id }}/edit">edit this audience</a> to use target-or-budget continuation and role-prioritized contact research in the next version. Previous results stay available.</p>{% endif %}
+
+{% if work_summary %}{% include "_research_summary.html" %}{% endif %}
+{% if suggestions %}<details class="panel"><summary>Company suggestions and website checks ({{ suggestions|length }})</summary><p>Names are kept even when the website is unknown. Unresolved names are not approved contacts.</p><div class="table-wrap"><table><thead><tr><th>Company</th><th>Website check</th><th>Discovery evidence</th></tr></thead><tbody>{% for suggestion in suggestions %}<tr><td>{{ suggestion.company }}</td><td>{{ 'Website found' if suggestion.status=='resolved' else 'Needs review' if suggestion.status=='unresolved' else 'Waiting for website check' }}{% if suggestion.reason %}<p class="field-help">{{ suggestion.reason }}</p>{% endif %}</td><td><a href="{{ suggestion.evidence.source_url }}" target="_blank" rel="noopener noreferrer">Open source</a><p>{{ suggestion.evidence.identity_quote }}</p></td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
+{% if audience_continuity_enabled and audience_history %}
+<section class="panel compact"><p class="eyebrow">SAVED AUDIENCE · RESEARCH HISTORY</p><p><strong>Last saved run:</strong> {{ audience_history[0].status|friendly_status }} · <time data-local-time datetime="{{ audience_history[0].updated_at }}">{{ audience_history[0].updated_at[:16]|replace("T"," ") }} UTC</time>{% if audience_history[0].id!=run.id %} · <a href="/research/{{ audience_history[0].id }}">Continue latest version →</a>{% endif %}</p>
+<details><summary>{{ audience_history|length }} research version{{ 's' if audience_history|length!=1 else '' }} · plans, results and spending kept</summary><ul>{% for version in audience_history %}<li><a href="/research/{{ version.id }}">{{ version.title }}</a> · {{ version.status|friendly_status }} · ${{ '%.4f'|format(version.spent) }} · <time data-local-time datetime="{{ version.updated_at }}">{{ version.updated_at[:16]|replace("T"," ") }} UTC</time>{{ ' · viewing now' if version.id==run.id else '' }}</li>{% endfor %}</ul></details></section>
+{% endif %}
+{% if not research_v2_enabled %}<p class="warning">Research update ready. Close the app terminal and reopen START-OUTREACH.cmd to load website resolution and improved contact research. Your saved work is kept.</p>{% elif run.execution.version==2 %}
+<details class="panel compact"><summary>How this research works</summary><p>Find company names → verify official websites → read contact pages → collect published emails → review company fit.</p><p class="field-help">Target: {{ run.target_count }} companies with published emails and finished checks. The budget is a maximum, not a guarantee. Emails and unknown company facts need your review before use.</p>{% if run.execution.outcome %}<strong>{{ {'target_reached':'Contact target reached — review results','partial_results':'Partial results — target not reached','no_usable_results':'No usable contacts — inspect the research stages','budget_limit':'Budget limit — saved work is kept','provider_blocked':'Provider needs attention','paused':'Research paused'}.get(run.execution.outcome,run.execution.outcome) }}</strong>{% endif %}</details>
+{% elif run.approved_at %}<p class="notice">This audience uses the earlier research engine to preserve approved requests. <a href="/research/{{ run.id }}/edit">Save a revised audience</a> to use website resolution and improved email research. Saving is free; paid planning and research need separate approval.</p>{% endif %}
+<details class="panel">
+<summary>Your brief and conversation</summary>{% for m in messages %}
+<div class="chat-message {{ m.role }}">
+<strong>{{ 'You' if m.role=='user' else 'Research assistant' }}</strong>
+<p class="preserve">{{ m.body }}</p>
+</div>{% endfor %}</details>{% if run.plan and run.approved_at %}
+<details class="panel">
+<summary>Approved research plan</summary>
+<p>{{ run.plan.summary }}</p>
+<ul>{% for criterion in run.plan.criteria %}<li>{{ criterion }}</li>{% endfor %}</ul>
+<p class="muted">Approved {{ run.approved_at }}. Exclusions: {{ run.plan.exclusions|join(', ') }}</p>
+</details>{% endif %}{% endblock %}

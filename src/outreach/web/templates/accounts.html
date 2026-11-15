@@ -1,0 +1,55 @@
+{% extends 'base.html' %}{% block body %}
+<p class="eyebrow">CHOOSE THE RIGHT SENDER</p>
+<h1>Email accounts</h1>
+<p>Connect Gmail and Zoho accounts, then assign one to each campaign. Both sending and inbox access must verify.</p>
+<details class="panel compact"><summary>Prefer Google or Zoho sign-in?</summary><p>Provider sign-in needs an HTTPS address. Use an app password for this local laptop workspace.</p><a href="/accounts/oauth">View OAuth setup →</a></details>
+<div class="card-grid">{% for a in accounts %}
+<article class="work-card">
+<span class="badge {{ 'ok' if a.verified_at else 'danger' }}">{{ 'Verified' if a.verified_at else 'Needs verification' }}</span>
+<h3>{{ a.label }}</h3>
+<p>{{ a.email }}</p><small>{{ "OAuth · HTTPS mail" if a.oauth_provider else "App password · SMTP/IMAP" }}</small>
+<small>{{ a.sender_name }} · {{ a.company }}</small>{% if a.last_error %}
+<p class="warning">{{ a.last_error }}</p>{% endif %}
+<div class="actions">
+<a href="{{ "/accounts/oauth" if a.oauth_provider else "/accounts?edit=" ~ a.id }}">{{ "Reconnect OAuth" if a.oauth_provider else "Edit account" }}</a>
+<a href="/accounts/{{ a.id }}/test">Send a test to yourself</a>
+<form method="post" action="/accounts/{{ a.id }}/verify">
+<button class="secondary small">Verify again</button>
+</form>
+</div>
+{% if a.oauth_provider %}<details><summary>Disconnect this account</summary><form method="post" action="/accounts/{{ a.id }}/disconnect"><label class="check"><input type="checkbox" name="confirmed" required>Stop this tool using the account. Keep campaign history.</label><button class="secondary">Disconnect from tool</button></form><small>To revoke provider consent too, remove this app in Google or Zoho connected-app settings.</small></details>{% endif %}
+</article>{% endfor %}</div>
+<form class="panel narrow" method="post" action="/accounts" data-provider-form>
+<h2>{{ 'Update app-password account' if edit else 'Connect an email account' }}</h2>{% if edit %}<input type="hidden" name="account_id" value="{{ edit.id }}">{% endif %}
+<div class="form-grid">
+<label>Service<select name="provider">
+<option value="gmail" {% if edit and 'gmail' in edit.smtp_host %}selected{% endif %}>Gmail</option>
+<option value="zoho" {% if edit and 'zoho' in edit.smtp_host %}selected{% endif %}>Zoho Mail</option>
+</select>
+</label>
+<label>Account label<input name="label" value="{{ edit.label if edit else '' }}" placeholder="Sales · Gmail" required>
+</label>
+</div>
+<label>Email address<input type="email" name="email" value="{{ edit.email if edit else '' }}" required autocomplete="username">
+</label>
+<div class="notice" data-provider-help="gmail"><strong>Gmail owner steps</strong><p>Enable 2-Step Verification in Google Account security, then create an App Password for this app. Paste that app password below, rather than your normal Google password.</p></div><div class="notice" data-provider-help="zoho"><strong>Zoho owner steps</strong><p>Enable IMAP in Zoho Mail settings. If MFA is enabled, create an application-specific password in Zoho Account security. Choose your account’s region and organization server type below.</p></div><label>App password<input name="password" type="password" autocomplete="new-password" {% if not edit %}required{% endif %}>
+<small>{{ 'Leave blank to keep the saved password.' if edit else 'Create an app password in your email provider’s security settings.' }} Passwords are encrypted and never displayed.</small>
+</label>
+<section data-provider-help="zoho"><h3>Zoho connection details</h3>
+<label>Account region<select name="region">{% for r in ['com','in','eu','com.au','jp','ca'] %}<option {% if edit and edit.smtp_host.endswith('.'+r) %}selected{% endif %}>{{ r }}</option>{% endfor %}</select>
+</label>
+<label class="check">
+<input type="checkbox" name="zoho_paid" value="1" {% if edit and 'smtppro' in edit.smtp_host %}checked{% endif %}>Use Zoho paid organization servers (smtppro / imappro)</label>
+</section>
+<div class="form-grid">
+<label>Your name<input name="sender_name" value="{{ edit.sender_name if edit else '' }}" required>
+</label>
+<label>Company or organization<input name="company" value="{{ edit.company if edit else '' }}" required>
+</label>
+</div>
+<label>Postal address<textarea name="address" rows="2" required>{{ edit.address if edit else '' }}</textarea>
+</label>
+<p class="muted">Gmail: enable 2-Step Verification and generate an app password. Zoho: enable IMAP access and use an application-specific password if MFA is enabled. Your plan must support SMTP and IMAP. Updating an account returns its approved unsent drafts to review.</p>
+<button>Save & verify connection</button><p class="field-help">Checks sending and inbox login. No test email is sent.</p>
+</form>
+{% endblock %}

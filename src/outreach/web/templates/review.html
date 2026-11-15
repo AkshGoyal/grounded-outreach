@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block body %}
+{% include '_campaign_header.html' %}
+<div class="review-navigation"><a href="/campaigns/{{ campaign_id }}/drafts">← Draft queue</a><span>{{ (queue_position ~ ' of ' ~ queue_count) if queue_position else 'Earlier draft version' }}</span><div>{% if previous_draft %}<a class="button secondary" href="/drafts/{{ previous_draft }}">Previous</a>{% endif %}{% if next_draft %}<a class="button secondary" href="/drafts/{{ next_draft }}">Next →</a>{% endif %}</div></div>
+<h2>{{ contact.company or contact.email }}</h2>
+<p class="note">Draft #{{ draft.id }} · To <strong>{{ contact.email }}</strong> ·
+  <span class="status s-{{ draft.status.value }}">{{ draft.status.value }}</span>
+  {% if suppressed %}<span class="tag">do not contact — this will never be sent</span>{% endif %}</p>
+
+{% if draft.generation %}<p class="muted">Generated for campaign {{ campaign_id }} · recipient #{{ draft.contact_id }} · instruction version {{ draft.generation.instruction_hash[:12] }}.</p>{% if generation_current == false and draft.status.value != 'sent' %}<p class="warning">Campaign instructions have changed. Regenerate this draft before approval.</p>{% endif %}{% else %}<p class="muted">Earlier draft: no generation snapshot was recorded. Review it carefully or regenerate using the current campaign instructions.</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<div class="review">
+  <div>
+  {% if draft.status.value == 'sent' %}
+  <p class="notice">This draft has been sent. <a href="/campaigns/{{ campaign_id }}/history">Open saved message history</a> for the actual email and attachments recorded at sending time. Current campaign settings may have changed.</p>
+  {% else %}
+  <details class="panel compact" id="saved-email-preview" open>
+    <summary>Full email preview · saved version</summary>
+    <p class="muted">Save edits below to update this preview. Final launch review checks the saved email, sender and attachments again.</p>
+    <p>To: {{ contact.email }}</p>
+    <pre class="email">Subject: {{ draft.subject }}
+
+{{ draft.body }}
+
+{{ tail }}</pre>
+    {% include '_attachments.html' %}
+  </details>
+  {% endif %}
+  <form method="post" class="stack wide">
+    <label>Subject <input name="subject" value="{{ draft.subject }}" {% if draft.status.value=='sent' %}readonly{% endif %}></label>
+    <label>Email <textarea name="body" rows="14" {% if draft.status.value=='sent' %}readonly{% endif %}>{{ draft.body }}</textarea></label>
+    {% if draft.status.value != 'sent' %}<div class="tail">
+      <div class="hint">{{ 'Your fixed closing, added' if has_closing else 'Added' }} underneath
+        when it is sent — exactly as shown, not editable here:</div>
+      <pre>{{ tail }}</pre>
+    </div>{% endif %}
+    {% if draft.status.value != 'sent' %}<p class="muted">Approving does not send. Editing rechecks the text and requires approval again.</p>
+    <div class="row">
+      <button name="action" value="approve" class="primary">Approve</button>
+      <button name="action" value="save">Save changes and re-check</button>
+      <button name="action" value="reject" class="quiet">Reject</button>
+    </div>
+    {% endif %}
+  </form>
+  {% if draft.status.value != 'sent' %}
+  {% if test_note %}<p class="ok-note">{{ test_note }}</p>{% endif %}
+  <details><summary>Optional: send a test to your own verified address</summary><form method="post" action="/drafts/{{ draft.id }}/test-send" class="row test-send">
+    <span class="hint">Read it in your own inbox first:</span>
+    <label>Your own test inbox<input name="to" type="email" value="{{ sender_email }}" placeholder="you@example.com" required></label>
+    <input type="hidden" name="test_nonce" value="{{ test_nonce }}"><input type="hidden" name="test_token" value="{{ test_token }}">
+    <label class="check"><input type="checkbox" name="confirmed" required>I control this inbox and approve one test of the saved draft and its attachments.</label>
+    <button {% if not sender_email %}disabled{% endif %}>Send me a test</button>
+  </form><p class="muted">Uses the saved draft. Save edits first. Provider acceptance does not prove delivery.</p></details>
+  {% endif %}
+  {% if test_history %}<details class="panel compact"><summary>Saved tests of this draft</summary>{% for test in test_history %}<p><span class="badge">{{ test.status }}</span> {{ test.recipient }} · {{ test.result }}{% for file in test.attachments %} · <a href="/campaigns/{{ campaign_id }}/attachments/{{ file.id }}/download">{{ file.filename }}</a>{% endfor %}</p>{% endfor %}</details>{% endif %}
+  </div>
+
+  <aside>
+    <h3>What the checker found</h3>
+    {% for c in checks %}
+      <div class="line v-{{ c.verdict }}{% if c.removed %} removed{% endif %}">
+        <span class="mark">{% if c.verdict == 'grounded' %}✓{% elif c.verdict == 'unverifiable' %}?{% elif c.verdict == 'unsupported' %}✕{% elif c.verdict == 'repeats' %}↺{% else %}·{% endif %}</span>
+        <div>{% if c.is_subject %}<span class="key">subject</span> {% endif %}<span class="said">{{ c.text }}</span>
+          {% if c.removed %}<div class="why">Removed — {{ c.reason }}</div>
+          {% elif c.reason %}<div class="why">{{ c.reason }}</div>{% endif %}</div>
+      </div>
+    {% endfor %}
+    <p class="hint legend">✓ backed by saved recipient evidence · ? about them but not checkable, your call ·
+      ✕ could not be backed up, so taken out · ↺ repeats the closing or an earlier line, so taken out · · says nothing about them</p>
+
+    <h3>What we know about them</h3>
+    {% for k, v in contact.evidence.items() if k not in ['research_run','review_note','research_sources'] %}
+      <div class="fact"><span class="key">{{ k }}</span> {{ v }}{% if research_sources and research_sources.get(k) %}<small class="block"><a href="{{ research_sources[k].url }}" target="_blank" rel="noopener noreferrer">Research source</a>{% if research_sources[k].retrieved_at %} · {{ research_sources[k].retrieved_at }}{% endif %}</small>{% endif %}</div>
+    {% else %}<p class="empty">nothing recorded</p>{% endfor %}
+    <p class="hint">A draft may only say things that appear here or in your campaign copy.
+      Know something true that is missing? Update the reviewed research or your imported evidence before generating a new draft.</p>
+  </aside>
+</div>
+{% endblock %}

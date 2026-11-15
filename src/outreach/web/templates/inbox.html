@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Inbox</h1>
+<p class="note">Replies to the emails you sent, matched to the company and sorted. Anyone who says
+  no, and any address that bounces, goes on the do-not-contact list straight away. Nothing is ever
+  answered without you.</p>
+
+{% if setup_missing %}
+<p class="error">Connect and verify an email account to check replies. <a href="/accounts">Email accounts →</a>
+</p>
+{% endif %}
+
+<form class="filters" method="get">
+<select name="campaign_id" aria-label="Campaign"><option value="">All campaigns</option>{% for c in campaigns %}<option value="{{ c.id }}" {% if campaign_id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+<select name="account_id" aria-label="Sending account"><option value="">All accounts</option>{% for a in accounts %}<option value="{{ a.id }}" {% if account_id==a.id %}selected{% endif %}>{{ a.label }} · {{ a.email }}</option>{% endfor %}</select>
+<select name="category" aria-label="Reply category">
+<option value="">All reply types</option>{% for value,label in labels.items() %}<option value="{{ value }}" {% if request.query_params.get('category')==value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<input type="hidden" name="show" value="{{ show }}">
+<button class="secondary">Filter inbox</button>
+</form>
+<div class="row">
+  <form method="post" action="/inbox/check">
+<input type="hidden" name="account_id" value="{{ account_id }}"><input type="hidden" name="campaign_id" value="{{ campaign_id }}"><input type="hidden" name="category" value="{{ category }}"><input type="hidden" name="show" value="{{ show }}">
+<button class="primary" {% if setup_missing %}disabled{% endif %}>Check for replies</button>
+</form>
+  <span class="hint">
+    {% if checker.last_checked %}Last checked {{ checker.last_checked.strftime('%H:%M') }} UTC.{% else %}Not checked yet.{% endif %}
+    {% if polling %}Checks by itself every {{ polling|int }} minutes while the tool is open.{% endif %}
+    Reading your inbox never marks mail as read or moves it.
+  </span>
+</div>
+{% if checker.last_error %}
+<p class="error">The last check failed: {{ checker.last_error }}</p>
+{% elif checker.last_result %}{% set r = checker.last_result %}
+<p class="ok-note">{{ r.new }} new repl{{ 'y' if r.new == 1 else 'ies' }}.
+  {% if r.suppressed %}{{ r.suppressed|length }} added to the do-not-contact list.{% endif %}
+  {% if r.unread %}{{ r.unread }} couldn't be read by the AI yet — tried again next check.{% endif %}</p>
+{% endif %}
+
+<p class="tabs">
+<a href="/inbox?show=new&amp;account_id={{ account_id|urlencode }}&amp;campaign_id={{ campaign_id|urlencode }}&amp;category={{ category|urlencode }}" class="{{ 'on' if show == 'new' }}">To handle ({{ new_count }})</a>
+  <a href="/inbox?show=all&amp;account_id={{ account_id|urlencode }}&amp;campaign_id={{ campaign_id|urlencode }}&amp;category={{ category|urlencode }}" class="{{ 'on' if show == 'all' }}">All ({{ all_count }})</a>
+</p>
+
+{% if replies %}
+<table class="audience-table">
+  <thead>
+<tr>
+<th>Received</th>
+<th>From</th>
+<th>What they said</th>
+<th>
+</th>
+</tr>
+</thead>
+  <tbody>
+  {% for r in replies %}
+    <tr>
+      <td class="nowrap" data-label="Received">{{ r.received_at.strftime('%d %b %H:%M') }}</td>
+      <td data-label="From">{{ r.company or r.from_address }}{% if r.company %}
+<div class="hint">{{ r.from_address }}</div>{% endif %}</td>
+      <td data-label="Reply">
+<span class="cat c-{{ r.category or 'unread' }}">{{ labels.get(r.category, 'Not read yet') if r.category else 'Not read yet' }}</span>
+        {{ r.summary }}
+        {% if r.action %}
+<div class="hint">{{ r.action }}</div>{% endif %}</td>
+      <td data-label="Review">
+<a href="/replies/{{ r.id }}">Open</a>
+</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">{% if show == 'new' %}Nothing to handle.{% else %}No replies yet.{% endif %}</p>
+{% endif %}
+{% endblock %}

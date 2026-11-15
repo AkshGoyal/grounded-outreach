@@ -1,0 +1,61 @@
+<form method="post" action="/leads/review" class="lead-selection">
+<input name="return_to" type="hidden" value="{{ request.url.path }}{{ ('?' ~ request.url.query) if request.url.query else '' }}">
+<label class="check"><input type="checkbox" data-select-all>Select all displayed companies</label>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>
+Select
+</th>
+<th>Company</th>
+<th>Published email</th>
+<th>Review</th>
+<th>Prior outreach</th>
+</tr>
+</thead>
+<tbody>{% for l in leads %}<tr>
+<td data-label="Select">
+<input type="checkbox" name="lead_ids" value="{{ l.id }}" {% if l.processing_status!='complete' or not l.contact.email or l.suppressed or l.review_status=='rejected' %}disabled{% endif %} aria-label="Select {{ l.company }}">
+</td>
+<td data-label="Company">
+<a href="/leads/{{ l.id }}">{{ l.company }}</a>
+<small class="block">{{ l.website }}</small>
+</td>
+<td data-label="Published address">{{ 'Contact checks not finished' if l.processing_status!='complete' else (l.contact.email.value if l.contact.email else 'Choose a contact again' if l.contact.stale_selection else 'No published email') }}{% if l.suppressed %}<span class="badge danger">Do not contact</span>{% endif %}</td>
+<td data-label="Review">
+<span class="badge">{{ 'Choose contact' if l.contact.stale_selection else 'Available' if l.review_status=='pending' and l.processing_status=='complete' and l.contact.email else 'Finding email' if l.review_status=='pending' else l.review_status|capitalize }}</span>
+{% set contact = l.contact %}{% include "_contact_status.html" %}
+</td>
+<td data-label="Prior outreach">{% for c in l.prior_campaigns %}<a class="block" href="/campaigns/{{ c.campaign_id }}">{{ c.name }}</a>{% else %}—{% endfor %}</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>
+{% if run and simple_handoff_enabled %}<div class="panel compact"><label>Campaign<select name="campaign_id"><option value="">Choose a campaign</option>{% for c in campaigns if c.status not in ['archived','completed'] %}<option value="{{ c.id }}" {% if campaign_context and campaign_context.id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>{% if leads|selectattr('prior_campaigns')|list %}<label class="check"><input type="checkbox" name="acknowledge_prior">Allow contacts already used in other campaigns.</label>{% endif %}<div class="actions"><button formaction="/research/{{ run.id }}/use" name="action" value="existing">Add selected to campaign</button><button formaction="/research/{{ run.id }}/use" name="action" value="new" class="secondary">Create campaign with selected contacts</button></div><p class="field-help">Adding accepts your selection. No separate approval or review note is needed. No emails are sent.</p></div>{% endif %}<details><summary>Optional: detailed review and saved lists</summary><div class="panel compact"><h3>1. Review your selection</h3><p class="muted" data-selection-status role="status">Select companies to review.</p>
+<label class="check">
+<input type="checkbox" name="confirmed">I checked company identity, ownership of the published email, and audience fit for every selected lead.</label>
+<label>Review note (required when a criterion is unknown or contradicted)<input name="note" maxlength="2000" placeholder="Why these companies still fit the audience">
+</label>
+<div class="actions">
+<button name="action" value="approve">Approve selected</button>
+<button name="action" value="reject" class="secondary">Remove selected</button>
+<button name="action" value="pending" class="secondary">Reset review</button>
+</div>
+<hr><details><summary>Save or use approved contacts</summary><p class="muted">Approve the selected contacts first. You can add approved contacts straight to a campaign below. Saving a list is optional.</p>
+<div class="form-grid">
+<label>Save approved selection as a list<input name="name" maxlength="120" placeholder="Approved textile prospects">
+</label>
+<label>Project<select name="project_id">
+<option value="">No project</option>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select>
+</label>
+</div>
+<button formaction="/lists" class="secondary">Save selected to list</button>
+<hr>
+{% if not run or not simple_handoff_enabled %}<label>Add approved selection to a campaign<select name="campaign_id">
+<option value="">Choose a campaign</option>{% for c in campaigns if c.status not in ['archived','completed'] %}<option value="{{ c.id }}" {% if campaign_context and campaign_context.id==c.id %}selected{% endif %}>{{ c.name }} · {{ c.sender_email or 'Environment account' }}</option>{% endfor %}</select>
+</label>
+<label class="check">
+<input name="acknowledge_prior" type="checkbox">I reviewed prior outreach and approve reuse across campaigns.</label>
+<button formaction="/enroll" class="secondary">Add selected to campaign</button> <button formaction="/campaigns/from-selection" class="secondary">Create campaign with selected contacts</button>{% endif %}</details>
+</div>
+</details></form>

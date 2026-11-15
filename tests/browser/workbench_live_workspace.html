@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Workbench live-adapter browser checks (fictional transport)</title>
+<style>iframe{display:block;width:1440px;height:1000px;border:0}pre{white-space:pre-wrap}</style>
+<pre id="result">RUNNING</pre><iframe id="app" title="Workbench live workbench checks"></iframe>
+<script>
+// Drives the real live adapter, ledger and routes. Every provider response is fictional
+// and served in-process by tests/fakes/workbench_server.py; no network or paid request occurs.
+(async () => {
+  const frame=document.querySelector('iframe'), result=document.querySelector('pre'), checks=[];
+  const assert=(ok,text)=>{if(!ok)throw Error(text);checks.push(text);};
+  const load=path=>new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);frame.src=path;});
+  const submit=form=>new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);form.querySelector('button[type=submit]').click();});
+  const calls=async()=>(await fetch('/qa/calls').then(r=>r.json())).calls;
+  const scenario=name=>fetch('/qa/scenario/'+name,{method:'POST'});
+  const audit=(d,label)=>{
+    assert(d.documentElement.scrollWidth<=d.defaultView.innerWidth,label+' has no horizontal overflow');
+    assert([...d.querySelectorAll('input:not([type=hidden]),textarea,select')].every(e=>e.labels.length||e.getAttribute('aria-label')),label+' inputs have labels');
+    assert(!d.querySelector('a[href="/accounts"],a[href="/inbox"],a[href="/setup"]'),label+' excludes legacy navigation');
+    assert(d.querySelector('.mode-label').textContent==='Live',label+' labels live mode');
+  };
+  const wait=async path=>{
+    for(let i=0;i<200;i++){
+      const saved=await fetch(path+'/status').then(r=>r.json());
+      if(!['queued','running'].includes(saved.execution_status))return saved;
+      await new Promise(r=>setTimeout(r,50));
+    }
+    throw Error('Live worker did not finish');
+  };
+  const fill=form=>{
+    form.querySelector('[name=name]').value='Maya Rao';
+    form.querySelector('[name=company]').value='Cedar Works';
+    form.querySelector('[name=role]').value='Finance Director';
+  };
+
+  // Consent gate: nothing is sent to a provider without explicit authorization.
+  let d=await load('/research/new');audit(d,'Live new research');
+  let form=d.querySelector('[data-prospect-form]');
+  const consent=form.querySelector('[name=live_consent]');
+  assert(consent&&consent.required&&!consent.checked,'Live research requires an unticked consent checkbox');
+  assert(!form.querySelector('[name=name]').value,'Live form is not prefilled with fictional data');
+  assert(/12 search queries/.test(d.body.textContent)&&/6 page reads/.test(d.body.textContent)&&d.body.textContent.includes('$0.05'),'Live limits are displayed before consent');
+  assert(!form.querySelector('[name=email]'),'The prospect email is not collected');
+  fill(form);
+  const unconsented=await fetch('/research',{method:'POST',body:new FormData(form)});
+  const unconsentedText=await unconsented.text();
+  assert(unconsented.status===422&&unconsentedText.includes('explicitly authorize')&&unconsentedText.includes('value="Maya Rao"'),'Missing consent is refused and input is preserved');
+  assert(await calls()===0,'No provider request is made without consent');
+
+  // Happy path with a restricted page and a LinkedIn hint.
+  consent.checked=true;
+  d=await submit(form);
+  const path=frame.contentWindow.location.pathname;
+  assert(path.startsWith('/runs/'),'Consented form opens the saved live run');
+  const saved=await wait(path);
+  assert(saved.execution_status==='completed'&&saved.business_outcome==='ready_for_review','No-email live prospect reaches a checked draft ready for review');
+  assert(saved.mode==='live'&&!saved.prospect.email,'Saved run is live and has no email');
+  assert(saved.usage.search_queries<=saved.limits.max_search_queries&&saved.usage.pages<=saved.limits.max_pages&&saved.usage.spent_micro<=saved.limits.budget_micro,'Live usage stays inside the run limits');
+  assert(saved.result.hook&&saved.result.hook.source_ids.length,'Selected hook is bound to read sources');
+  d=await load(path);audit(d,'Live run detail');
+  assert(d.querySelector('[data-business-outcome]').textContent==='Ready for review','Live result has a text outcome label');
+  assert(d.body.textContent.includes('Source limitations'),'Restricted and LinkedIn sources are reported as limitations');
+  const diagnostics=d.querySelector('.source-diagnostics');
+  assert(diagnostics&&diagnostics.textContent.includes('Not used as proof'),'Previews and unavailable pages are separated from evidence');
+  assert(!diagnostics.querySelector('a'),'Unavailable sources are not offered as links');
+  assert(/linkedin\.com/.test(diagnostics.textContent),'LinkedIn appears only as an identity hint, outside the evidence');
+  const links=[...d.querySelectorAll('.source-record a.source-link')];
+  assert(links.length&&links.every(a=>a.target==='_blank'&&a.rel.includes('noopener')&&a.rel.includes('noreferrer')&&a.href.startsWith('https://')),'Read sources open safely in a new tab');
+  assert(d.querySelector('.source-dates').textContent.includes('Event date'),'Source dates are visible');
+  const summary=d.querySelector('.request-summary');
+  assert(summary&&summary.textContent.includes('Held requests: 0'),'Request summary shows limits and no held requests');
+  assert(d.querySelector('#draft .quiet-label').textContent.includes('Written by the model'),'Live draft is labelled as written by the model');
+  assert(saved.draft.claims.some(c=>saved.result.hook.source_ids.includes(c.support_id)),'Live draft cites the selected hook source');
+  assert((await fetch(path+'/export')).status===409,'Live draft cannot be exported before approval');
+  const before=await calls();
+  await load(path);await load('/history');await fetch(path+'/status');
+  assert(await calls()===before,'Refresh and history read saved results without provider calls');
+
+  // Sparse evidence: insufficient evidence is not a provider failure.
+  await scenario('sparse');
+  d=await load('/research/new');form=d.querySelector('form');fill(form);form.querySelector('[name=live_consent]').checked=true;
+  d=await submit(form);
+  const sparsePath=frame.contentWindow.location.pathname;
+  const sparse=await wait(sparsePath);
+  assert(sparse.execution_status==='completed'&&sparse.result.hook.basis==='as_entered'&&sparse.draft,'With nothing readable the run still completes with a draft marked not personalised');
+  d=await load(sparsePath);audit(d,'Sparse live run');
+  assert(d.querySelector('[data-hook-strength=none]').textContent==='Not personalised'&&d.querySelector('[data-judgement]'),'Unreadable result says the email is not personalised and why');
+  assert(!d.querySelector('.notice-error'),'Sparse evidence is not shown as a provider failure');
+  const retry=d.querySelector(`a[href="/research/new?from_run=${sparsePath.split('/').pop()}"]`);
+  assert(retry&&retry.textContent==='Try another source','Try another source is offered');
+  d=await load(retry.getAttribute('href'));form=d.querySelector('form');
+  assert(form.querySelector('[name=name]').value==='Maya Rao'&&!form.querySelector('[name=live_consent]').checked,'Try another source keeps the prospect and asks for new consent');
+
+  // Uncertain, possibly charged request: held, explained, never replayed.
+  await scenario('uncertain');
+  d=await load('/research/new');form=d.querySelector('form');fill(form);form.querySelector('[name=live_consent]').checked=true;
+  d=await submit(form);
+  const heldPath=frame.contentWindow.location.pathname;
+  const held=await wait(heldPath);
+  assert(held.execution_status==='completed'&&held.draft&&held.draft.origin==='template','After an uncertain request the run still finishes with a free template draft');
+  assert(held.usage.held_requests===1&&held.source_records.some(s=>s.access_status==='read'),'The held request and the page already read are both saved');
+  d=await load(heldPath);audit(d,'Held live run');
+  assert(d.querySelector('[data-template-draft]')&&d.body.textContent.includes('Research stopped early'),'The page says research stopped early and the template wrote the email');
+  assert(d.querySelectorAll('.source-record').length===1&&d.querySelector('[data-hook-strength=weak]'),'The page already read becomes a weaker hook after the held request');
+  assert(d.querySelector('.request-summary').textContent.includes('Held requests: 1'),'Request summary shows the held request');
+  const heldCalls=await calls();
+  await load(heldPath);await fetch(heldPath+'/status');
+  assert(await calls()===heldCalls,'Viewing a held run does not replay the request');
+  await scenario('normal');
+
+  const history=await load('/history');audit(history,'Live history');
+  for(const p of [path,sparsePath,heldPath])assert(history.querySelector(`[href="${p}"]`),'History links to '+p.split('/').pop());
+  for(const [method,url] of [['GET','/accounts'],['POST','/inbox/check'],['POST','/campaigns/fake/send']]){
+    assert((await fetch(url,{method})).status===404,'Live profile: '+method+' '+url+' is absent');
+  }
+  for(const width of [320,390,1440]){
+    frame.style.width=width+'px';
+    for(const url of ['/research/new',path,sparsePath,heldPath,'/history'])audit(await load(url),url+' at '+width+'px');
+  }
+  result.textContent='PASS\n'+checks.length+' Workbench live-adapter browser checks (fictional transport)\n'+checks.join('\n');
+})().catch(error=>document.querySelector('pre').textContent='FAIL\n'+error.stack);
+</script></html>

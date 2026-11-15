@@ -1,0 +1,4 @@
+{% if contact.email %}<small class="block">{{ contact.role_label }}</small>{% endif %}
+{% if contact.stale_selection %}<small class="block warning">Selected email is no longer in the published evidence. Choose a contact again.</small>{% endif %}
+{% if contact.contradicted %}<small class="block warning">Audience fit mismatch: {{ contact.contradicted|join('; ') }}</small>{% endif %}
+{% if contact.unknown %}<small class="block">Audience criteria unconfirmed: {{ contact.unknown|join('; ') }}</small>{% endif %}

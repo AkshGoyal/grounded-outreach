@@ -1,0 +1,32 @@
+{% extends 'base.html' %}{% block title %}Research · Outreach{% endblock %}{% block body %}
+<div class="section-heading"><div><p class="eyebrow">YOUR AUDIENCES</p><h1>{{ "Deleted audiences" if request.query_params.get("view")=="deleted" else "Saved audiences" }}</h1></div><a class="button" href="/research/new">New audience →</a></div>
+{% if feedback_enabled %}<nav class="work-views" aria-label="Audience view"><a href="/research" {% if request.query_params.get("view")!="archived" %}aria-current="page"{% endif %}>Current work</a><a href="/research?view=archived" {% if request.query_params.get("view")=="archived" %}aria-current="page"{% endif %}>Archived work</a><a href="/research?view=deleted" {% if request.query_params.get("view")=="deleted" %}aria-current="page"{% endif %}>Deleted audiences</a></nav>{% endif %}<p class="intro">Your saved briefs, approved plans and discovered companies, together. Start research when the audience and spending limit look right.</p>
+{% if not keys_ready %}<div class="notice">You can save an audience now. Configure research providers before approving paid research. <a href="/setup">Check setup</a>.</div>{% endif %}
+<div class="section-heading">
+<h2>Your research</h2>
+<span class="muted">{{ runs|length }} audiences</span>
+</div><details class="panel compact"><summary>Search & filter</summary>{% include '_filters.html' %}</details>
+<div class="card-grid audience-cards">{% for r in runs %}<article class="work-card">
+<span class="badge">{{ "Deleted" if r.deleted else r.status|friendly_status }}</span><p class="eyebrow">AUDIENCE {{ (r.audience_id or r.id)[:6] }}</p>
+<h3><a href="/research/{{ r.id }}">{{ r.title }}</a></h3>
+<p class="audience-goal">{{ (r.intake.goal if r.intake else r.brief)[:180] }}</p>
+<div class="card-meta">
+<span>{{ r.purpose }} · {{ r.target_count }} companies</span>
+<strong>${{ '%.4f'|format(r.spent) }} / ${{ '%.2f'|format(r.budget) }}</strong>
+</div>
+<p class="field-help">Last run: {{ r.status|friendly_status }} · <time data-local-time datetime="{{ r.updated_at }}">{{ r.updated_at[:16]|replace("T"," ") }} UTC</time>{% if r.run_count %} · {{ r.run_count }} version{{ "s" if r.run_count!=1 else "" }} · ${{ "%.4f"|format(r.total_spent) }} total history{% endif %}</p><small>{{ r.tags }}</small>
+<p>{{ r.next_step.detail if r.next_step else "Open this audience to continue." }}</p><div class="actions"><a class="button secondary" href="{{ r.next_step.href if r.next_step else "/research/"~r.id }}">{{ r.next_step.label if r.next_step else "Open audience" }} →</a><a class="button secondary" href="{{ "/research/"~r.id~"/edit" if feedback_enabled else "#app-update" }}">Edit audience</a><a class="button secondary remove-link" href="{{ "/workspace/audience/"~r.id~"/remove" if feedback_enabled else "#app-update" }}">{{ "Restore" if r.deleted else "Restore / delete" if r.archived else "Delete / archive" }}</a></div></article>{% else %}
+<div class="empty">No research yet. Start with a new audience; saving your brief uses no API calls.</div>{% endfor %}</div>
+<details class="panel">
+<summary>Create a project to group your work</summary>
+<form action="/projects" method="post">
+<label>Project name<input name="name" maxlength="100" required>
+</label>
+<label>Purpose<select name="purpose">{% for p in purposes %}<option>{{ p }}</option>{% endfor %}</select>
+</label>
+<label>Tags<input name="tags">
+</label>
+<button>Create project</button>
+</form>
+</details>
+{% endblock %}

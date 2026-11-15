@@ -1,0 +1,25 @@
+<section class="panel next-action" id="add-contacts">
+<h2>Add emails from your audiences</h2>
+<p>Open an audience, select the emails you want, and add them here.</p>
+{% for audience in available_audiences %}
+<details class="panel compact" {% if available_audiences|length==1 %}open{% endif %}>
+<summary><strong>{{ audience.title }}</strong> · {{ audience.contacts|length }} emails available</summary>
+{% if audience.contacts %}
+<form method="post" action="/research/{{ audience.id }}/use" class="lead-selection" data-reviewed-selection>
+<input type="hidden" name="campaign_id" value="{{ campaign_id }}">
+<label class="check"><input type="checkbox" data-select-all>Select all available emails</label>
+<div class="table-wrap"><table><thead><tr><th>Select</th><th>Company</th><th>Email</th><th>Contact type</th></tr></thead><tbody>
+{% for lead in audience.contacts %}
+<tr><td><input type="checkbox" name="lead_ids" value="{{ lead.id }}" aria-label="Select {{ lead.company }}"></td>
+<td>{{ lead.company }}</td><td>{{ lead.email.value }}</td>
+<td>{% set contact = lead.contact %}{% include "_contact_status.html" %} <a href="/leads/{{ lead.id }}">Sources</a></td></tr>
+{% endfor %}</tbody></table></div>
+<p data-selection-status role="status" class="muted">Select emails to add.</p>
+{% if audience.has_prior %}<label class="check"><input type="checkbox" name="acknowledge_prior">Allow these contacts to be used in another campaign.</label>{% endif %}
+<button name="action" value="existing">Add selected</button>
+<p class="field-help">No emails are sent. Contacts already in this campaign are omitted.</p>
+</form>
+{% else %}<p>No new published emails available. <a href="/research/{{ audience.id }}">Continue this audience’s research</a></p>{% endif %}
+</details>
+{% else %}<p>No saved audiences yet. <a href="/campaigns/{{ campaign_id }}/research">Find emails for this campaign →</a></p>{% endfor %}
+</section>

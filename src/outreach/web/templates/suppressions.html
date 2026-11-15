@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Do-not-contact</h1>
+<p class="note">Nothing is ever sent to an address on this list. The check happens
+in the sending code <em>and</em> in the database, so a mistake in one cannot get past
+the other. This list applies across every campaign.</p>
+
+<form method="post" class="row">
+  <label>Email address<input name="email" type="email" placeholder="address" required></label>
+  <label>Reason<select name="reason">
+    {% for r in reasons %}<option value="{{ r.value }}">{{ r.value }}</option>{% endfor %}
+  </select></label>
+  <label>Note (optional)<input name="note" placeholder="note (optional)"></label>
+  <button type="submit" class="primary">Add</button>
+</form>
+
+{% if rows %}
+<table>
+  <thead><tr><th>Address</th><th>Reason</th><th>Note</th><th>Added</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.email }}</td><td>{{ r.reason }}</td>
+      <td>{{ r.note or '—' }}</td><td>{{ r.created_at[:10] }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Nobody on the list yet.</p>
+{% endif %}
+{% endblock %}

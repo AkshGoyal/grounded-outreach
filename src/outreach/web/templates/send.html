@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block body %}
+{% include '_campaign_header.html' %}
+<h2>What would be sent</h2>
+<p class="note">Exactly what a send would do right now. Nothing goes until you press Send and confirm.</p>
+
+{% if setup_missing %}<div class="warning">Launch is blocked: {{ setup_missing|join(', ') }}. <a href="/campaigns/{{ campaign_id }}/settings">Choose the campaign sender</a> or <a href="/accounts">connect an email account</a>.</div>{% endif %}
+<div class="counts">
+  <div class="count ok"><strong>{{ going|length }}</strong> would go</div>
+  <div class="count dup"><strong>{{ planned|length - going|length }}</strong> held back</div>
+  <div class="count"><strong>{{ cap }}</strong> a day at most</div>
+</div>
+
+{% include '_attachments.html' %}
+{% if planned %}
+<table>
+  <thead><tr><th>Company</th><th>Email</th><th>What happens</th></tr></thead>
+  <tbody>
+  {% for p in planned %}
+    <tr><td>{{ p.draft.company }}</td><td>{{ p.draft.email }}</td>
+      <td>{% if p.will_send %}<span class="status s-approved">sends</span>{% else %}held — {{ p.skip }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Nothing approved yet. <a href="/campaigns/{{ campaign_id }}/drafts">Review drafts</a>.</p>
+{% endif %}
+
+{% if going %}
+<h2>Review every approved email</h2>{% for delivery in going %}<details class="panel compact" {% if loop.first %}open{% endif %}><summary>{{ delivery.draft.company or delivery.draft.email }} · {{ delivery.draft.subject }}</summary>
+<pre class="email">From:    {{ sender }}
+To:      {{ delivery.draft.email }}
+Subject: {{ delivery.draft.subject }}
+
+{{ delivery.draft.body }}
+
+{{ footer }}</pre></details>{% endfor %}
+
+<h2>Launch campaign</h2>
+{% if setup_missing %}
+<p class="error">Sending isn't set up yet — missing: {{ setup_missing|join(', ') }}.
+  <a href="/accounts">Check email accounts →</a></p>
+{% elif busy %}
+<p class="note">A send is already running. <a href="/sending">Watch it →</a></p>
+{% else %}
+<form method="post" action="/campaigns/{{ campaign_id }}/send"
+      onsubmit="return confirm('Send {{ going|length }} email{{ '' if going|length == 1 else 's' }} now, to real people? You can stop between emails.');">
+  <input type="hidden" name="launch_token" value="{{ launch_token }}">
+  <label class="check"><input type="checkbox" name="confirm_send" required>I reviewed these recipients, complete emails, attachments and sending account, and approve sending now.</label>
+  <button class="primary big">Send {{ going|length }} email{{ '' if going|length == 1 else 's' }} now</button>
+</form>
+{% endif %}
+<p class="hint">{% if going|length == 1 %}It goes as soon as you press the button.
+  {% else %}They go {{ gap }} seconds apart, so all {{ going|length }} take about
+  {{ [((going|length - 1) * gap / 60)|round(0, 'ceil')|int, 1]|max }} minute{{ '' if ((going|length - 1) * gap) <= 60 else 's' }}.
+  You can stop between emails, and you can leave the progress page — sending carries on while the tool is running.{% endif %}
+  Replies arrive in this campaign’s assigned inbox; anyone who asks not to be contacted goes on the
+  <a href="/suppressions">do-not-contact list</a>.</p>
+{% endif %}
+<p><a href="/campaigns/{{ campaign_id }}/history">Inspect saved message history and uncertain attempts →</a></p>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Import a list</h1>
+
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="stack">
+  <label>Spreadsheet <input type="file" name="file" accept=".csv,.xlsx,.xlsm" required></label>
+  <label>Campaign <input name="campaign" list="campaign-options" value="{{ campaign or '' }}" required placeholder="Choose a campaign ID"></label>
+  <datalist id="campaign-options">{% for c in campaigns %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</datalist>
+  <p class="hint">Choose an existing campaign, or enter a new ID such as ai-careers. For a new campaign with its own sender, <a href="/campaigns/new">create the campaign first</a>, then import here.</p>
+  <label>Sheet <span class="hint">only for a workbook with several</span>
+    <input name="sheet" value="{{ sheet or '' }}"></label>
+  <label>Email column <span class="hint">leave blank to let it work this out</span>
+    <input name="email_column"></label>
+  <div class="row">
+    <button type="submit">Preview</button>
+    <button type="submit" name="commit" value="1" class="primary">Preview and import</button>
+  </div>
+</form>
+
+{% if report %}
+<h2>{{ 'Imported' if committed else 'This is what would happen' }}</h2>
+
+<div class="plan">
+  <div><span class="key">Email column</span> {{ report.plan.email_column or 'none found' }}</div>
+  <div><span class="key">Company</span> {{ report.plan.company_column or 'none found' }}</div>
+  <div><span class="key">Kept as evidence</span>
+    {{ report.plan.evidence_columns|join(', ') or 'none' }}</div>
+</div>
+
+<div class="counts">
+  <div class="count ok"><strong>{{ report.counts.accepted }}</strong> accepted</div>
+  <div class="count bad"><strong>{{ report.counts.rejected }}</strong> rejected</div>
+  <div class="count dup"><strong>{{ report.counts.duplicate }}</strong> duplicates</div>
+</div>
+
+{% if noted %}
+<h3>Accepted, but worth a look</h3>
+<table>
+  <thead><tr><th class="num">Row</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for n in noted %}<tr><td class="num">{{ n.row_number }}</td><td>{{ n.note }}</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if problems %}
+<h3>Rows not imported</h3>
+<table>
+  <thead><tr><th>What happened</th><th>Why</th><th class="num">How many</th><th>Rows</th></tr></thead>
+  <tbody>
+  {% for status, reason, count, rows in problems %}
+    <tr><td>{{ status }}</td><td>{{ reason }}</td><td class="num">{{ count }}</td><td>{{ rows }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p class="note">
+  {% if committed %}
+    Saved. <a href="/campaigns/{{ campaign }}">See the contacts</a>.
+  {% else %}
+    Nothing was written. Press <em>Preview and import</em> if this looks right.
+  {% endif %}
+</p>
+{% endif %}
+{% endblock %}

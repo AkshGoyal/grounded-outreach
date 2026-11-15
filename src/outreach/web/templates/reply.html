@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block body %}
+{% if metadata %}{% include '_campaign_header.html' %}{% endif %}
+<p class="crumb"><a href="/inbox{% if campaign_id %}?campaign_id={{ campaign_id }}&show=all{% endif %}">Inbox</a> › {{ reply.company or reply.from_address }}</p>
+<h1>{{ reply.company or reply.from_address }}</h1>
+<p class="note"><span class="cat c-{{ reply.category or 'unread' }}">{{ label }}</span> {{ reply.summary }}
+  · from {{ reply.from_address }} · {{ reply.received_at.strftime('%d %b %Y, %H:%M') }}
+  {% if reply.status.value == 'done' %}· <span class="status s-approved">handled</span>{% endif %}</p>
+{% if reply.action %}<p class="hint">{{ reply.action }}</p>{% endif %}
+{% if reply.contact_id is none %}<p class="hint">Matched only by its subject, not to a particular
+  company — so nothing was done automatically.</p>{% endif %}
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<p class="muted">Reply from account: {{ account.email if account else 'configured workspace mailbox' }}. Answers use this same account.</p>
+{% if attempt %}<section class="panel compact"><h2>{{ 'Your answer was accepted by the provider' if attempt.status=='sent' else 'Previous answer failed' if attempt.status=='failed' else 'Answer outcome is uncertain' }}</h2>{% if attempt.body_text %}<pre class="email">{{ attempt.body_text }}</pre>{% endif %}{% if attempt.status not in ['sent','failed'] %}<p class="warning">Check the provider’s Sent folder before doing anything else. Repeated submissions stay blocked, including after a restart.</p>{% endif %}{% if campaign_id %}<a href="/campaigns/{{ campaign_id }}/history">Open saved message history →</a>{% endif %}</section>{% endif %}
+
+<div class="review">
+  <div>
+    <h3>Their reply</h3>
+    <pre class="email">{{ reply.body_text }}</pre>
+    {% if reply.details %}
+    <h3>Details they gave</h3>
+    {% for key, value in reply.details.items() %}
+      <div class="fact"><span class="key">{{ key|replace('_', ' ') }}</span> {{ value }}</div>
+    {% endfor %}
+    <p class="hint">Each of these was checked to appear word for word in their reply.</p>
+    {% endif %}
+    {% if original %}
+    <details><summary>The email we sent them</summary>
+      <pre class="email">Subject: {{ original.subject }}
+
+{{ original.body_text }}</pre></details>
+    {% endif %}
+  </div>
+
+  <aside>
+    {% if can_answer %}
+    <h3>Your answer</h3>
+    <form method="post" action="/replies/{{ reply.id }}/send" class="stack wide"
+          onsubmit="return confirm('Send this answer to {{ reply.from_address }}?');">
+      <label>Answer text<textarea name="body" rows="12" required>{{ answer }}</textarea></label>
+      <p class="hint">Suggested by the AI from their reply and your offer — read and edit it.
+        It goes in the same email thread.</p>
+      <div class="row"><button class="primary">Send answer</button></div>
+    </form>
+    {% elif suppressed %}
+    <p class="note">They're on the do-not-contact list, so this tool won't write to them again.</p>
+    {% endif %}
+    <form method="post" action="/replies/{{ reply.id }}/done" class="row">
+      {% if reply.status.value == 'done' %}<input type="hidden" name="undo" value="1">
+      <button>Move back to “to handle”</button>
+      {% else %}<button>Mark as handled</button>{% endif %}
+    </form>
+  </aside>
+</div>
+{% endblock %}

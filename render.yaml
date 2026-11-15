@@ -1,0 +1,16 @@
+# Sample-data frontend only. This does not deploy the Python backend or any secrets.
+services:
+  - type: web
+    runtime: static
+    name: outreach-mobile-demo
+    branch: codex/research-pilot-v1
+    buildCommand: test -f demo/mobile-preview.html
+    staticPublishPath: ./demo
+    autoDeployTrigger: "off"
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}New audience · Outreach{% endblock %}
+{% block body %}
+<a class="breadcrumb" href="/research">← Saved audiences</a>
+<p class="eyebrow">STEP 1 · DESCRIBE YOUR AUDIENCE</p>
+<h1>Who would you like to reach?</h1>
+{% if campaign_context %}<p class="notice">Next research batch for <a href="/campaigns/{{ campaign_context.id }}/research">{{ campaign_context.name }}</a>. Your entries are preserved below.</p>{% endif %}<p class="intro">Three simple steps to save your audience. You can approve research later; this form is free.</p>
+{% include '_audience_intake.html' %}
+{% endblock %}

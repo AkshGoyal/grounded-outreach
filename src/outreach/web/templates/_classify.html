@@ -1,0 +1,9 @@
+<div class="form-grid">
+<label>Project<select name="project_id">
+<option value="">No project</option>{% for p in projects %}<option value="{{ p.id }}" {% if campaign and campaign.project_id==p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>
+</label>
+<label>Purpose<select name="purpose">{% for p in purposes %}<option {% if campaign and campaign.purpose==p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+</label>
+<label>Tags<input name="tags" value="{{ campaign.tags or '' if campaign else '' }}" placeholder="textiles, India, October">
+</label>
+</div>

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% block title %}Use audience · {{ run.title }}{% endblock %}
+{% block body %}<a class="breadcrumb" href="/research/{{ run.id }}">← Back to audience</a>
+<h1>Use “{{ run.title }}” in a campaign</h1>
+<p class="intro">Saving an audience keeps your goal and search criteria. Choose the emails you want and add them directly to a campaign. No separate approval or saved list is needed.</p>
+<ol class="campaign-checklist"><li><strong>1. Audience saved</strong></li><li><strong>2. Emails found</strong> · {{ lead_count }} companies found</li><li><strong>3. Add to campaign</strong> · {{ leads|length }} available contacts ready</li></ol>
+{% if blocked_count %}<p class="notice">{{ blocked_count }} companies are not ready: checks may be unfinished, an email may be missing, the address may be suppressed, or the contact was removed. <a href="/research/{{ run.id }}#contact-review">Review contacts →</a></p>{% endif %}
+{% if not leads %}<div class="panel"><h2>No available contacts to add yet</h2><p>{% if not lead_count %}This audience contains your saved criteria but no researched contacts yet. Open the audience to prepare a plan or continue its research.{% else %}Continue research to find published emails. They will appear here once available.{% endif %}</p><a class="button" href="/research/{{ run.id }}">Open audience &amp; continue →</a></div>
+{% else %}
+<form method="post" class="panel lead-selection" data-reviewed-selection>
+<label class="check"><input type="checkbox" data-select-all>Select all displayed emails</label>
+<div class="table-wrap"><table><thead><tr><th>Select</th><th>Company</th><th>Email</th><th>Prior campaigns</th></tr></thead><tbody>{% for lead in leads %}
+<tr><td><input type="checkbox" name="lead_ids" value="{{ lead.id }}" {% if lead.contact.preselect %}checked{% endif %} aria-label="Select {{ lead.company }}"></td><td><a href="/leads/{{ lead.id }}">{{ lead.company }}</a></td><td>{{ lead.contact.email.value }}{% set contact = lead.contact %}{% include "_contact_status.html" %}</td><td>{% for prior in lead.prior_campaigns %}<a href="/campaigns/{{ prior.campaign_id }}">{{ prior.name }}</a> {% else %}None{% endfor %}</td></tr>{% endfor %}</tbody></table></div>
+<p data-selection-status class="muted" role="status">{{ leads|selectattr("contact.preselect")|list|length }} contacts selected.</p>
+<label>Campaign<select name="campaign_id"><option value="">Choose an existing campaign</option>{% for c in campaigns if c.status not in ['archived','completed'] %}<option value="{{ c.id }}" {% if campaign_context and campaign_context.id==c.id %}selected{% endif %}>{{ c.name }} · {{ c.sender_email or 'Choose sender later' }}</option>{% endfor %}</select></label>
+{% if leads|selectattr('prior_campaigns')|list %}<label class="check"><input type="checkbox" name="acknowledge_prior">I reviewed prior outreach and approve reuse across campaigns.</label>{% endif %}
+<div class="actions"><button name="action" value="existing">Add selected contacts to campaign</button><button class="secondary" name="action" value="new">Create a new campaign with selection</button></div>
+<p class="muted">Choose up to 250 contacts per action. Existing members are skipped. Adding accepts your selected contacts for the campaign. Published emails have not been tested for delivery. This step saves contacts only. You write and review emails before sending.</p></form>
+{% endif %}{% endblock %}

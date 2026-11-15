@@ -1,0 +1,107 @@
+{% extends 'workbench/base.html' %}
+{% block title %}Evaluation | Outreach Workbench{% endblock %}
+{% block body %}
+{% set r = report %}
+<div class="page-head">
+  <div>
+    <h1>How it performs on real prospects</h1>
+    <p class="lede">{{ r.n }} real executives, {{ r.goals_count }} different products to pitch, run live on {{ r.dates[0]|day }}. Every number below comes from those runs; every email links to the public page its hook came from.</p>
+  </div>
+</div>
+
+<section class="eval-headline" aria-label="Headline results">
+  {% for h in r.headline %}
+  <div class="eval-kpi">
+    <p class="eval-value">{{ h.value }}</p>
+    <p class="eval-label">{{ h.label }}</p>
+    <p class="eval-detail">{{ h.detail }}</p>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="card eval-section" aria-labelledby="hooks-heading">
+  <h2 id="hooks-heading">How personal the emails are</h2>
+  <div class="strength-bar" role="img" aria-label="{% for s in r.strengths %}{{ s.count }} {{ s.label }}{{ ', ' if not loop.last }}{% endfor %}">
+    {% for s in r.strengths if s.count %}<span class="bar-{{ s.key }}" style="flex:{{ s.count }}"></span>{% endfor %}
+  </div>
+  <ul class="eval-strengths">
+    {% for s in r.strengths %}<li class="key-{{ s.key }}"><strong>{{ s.count }} {{ s.label }}</strong> <span>{{ s.detail }}</span></li>{% endfor %}
+  </ul>
+</section>
+
+<section class="card eval-section" aria-labelledby="metrics-heading">
+  <h2 id="metrics-heading">What we measured, and why it matters</h2>
+  <dl class="eval-metrics">
+    {% for m in r.metrics %}
+    <div class="eval-metric">
+      <dt>{{ m.name }}</dt>
+      <dd class="eval-metric-value">{{ m.value }}</dd>
+      <dd class="eval-metric-detail">{{ m.detail }}</dd>
+      <dd class="eval-metric-why">{{ m.why }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+</section>
+
+<section class="card eval-section" aria-labelledby="goals-heading">
+  <h2 id="goals-heading">Three different pitches</h2>
+  <p class="hint">The same workbench, given a different goal each time. The products and senders are fictional; the prospects are real.</p>
+  <div class="table-scroll">
+  <table class="eval-table">
+    <thead><tr><th scope="col">Pitch</th><th scope="col">Prospects</th><th scope="col">Strong hooks</th><th scope="col">Ready to send</th><th scope="col">Cost each</th><th scope="col">Time each</th></tr></thead>
+    <tbody>
+      {% for g in r.goals %}
+      <tr><th scope="row">{{ g.label }}<span class="hint">{{ g.sender }}: {{ g.offer|lower }}</span></th><td>{{ g.prospects }}</td><td>{{ g.strong }} of {{ g.prospects }}</td><td>{{ g.ready }} of {{ g.prospects }}</td><td>${{ '%.3f'|format(g.cost) }}</td><td>{{ g.seconds }} s</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card eval-section" aria-labelledby="prospects-heading">
+  <h2 id="prospects-heading">Every prospect and email</h2>
+  <p class="hint">Open one to read the email and the source it rests on.</p>
+  <ol class="eval-prospects">
+    {% for p in r.prospects %}
+    <li>
+      <details class="eval-prospect">
+        <summary>
+          <span class="eval-who"><strong>{{ p.name }}</strong><span>{{ p.role }}, {{ p.company }}</span></span>
+          <span class="eval-tags"><span class="chip strength-{{ p.hook.strength or 'none' }}">{{ p.strength_label }}</span><span class="chip verdict-{{ p.review.verdict }}">{{ p.verdict_label }}</span></span>
+        </summary>
+        <div class="eval-body">
+          <p class="eval-meta">{{ p.goal_label }} · ${{ '%.3f'|format(p.cost_micro / 1000000) }} · {{ p.seconds }} s · {{ p.why_chosen }}</p>
+          {% if p.hook.summary %}
+          <blockquote class="hook-passage">{{ p.hook.summary }}</blockquote>
+          {% if p.hook.source_url %}<p class="hook-source">From <a href="{{ p.hook.source_url }}" target="_blank" rel="noopener noreferrer">{{ p.hook.source_title or 'the source' }}</a></p>{% endif %}
+          {% endif %}
+          {% if p.email %}
+          <div class="eval-email"><p class="eval-subject"><span>Subject</span> {{ p.email.subject }}</p><pre>{{ p.email.body }}</pre></div>
+          {% endif %}
+          <p class="eval-note"><strong>{{ p.verdict_label }}.</strong> {{ p.review.note }}</p>
+        </div>
+      </details>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="card eval-section" aria-labelledby="fixes-heading">
+  <h2 id="fixes-heading">What testing found, and what we fixed</h2>
+  <p class="hint">Testing on real prospects turned up {{ r.fixes|length }} problems. Each was fixed, given a test, and the affected prospects were run again. Before the fixes: {{ r.first_attempt.reached_review }} of {{ r.n }} reached a draft, {{ r.first_attempt.strong_hooks }} had a strong hook, {{ r.first_attempt.first_pass }} passed the checks first time.</p>
+  <ol class="eval-fixes">
+    {% for f in r.fixes %}<li><p class="eval-fix-problem">{{ f.problem }}</p><p class="eval-fix">{{ f.fix }}</p><p class="hint">Found on {{ f.found_on }}</p></li>{% endfor %}
+  </ol>
+</section>
+
+<section class="eval-method" aria-labelledby="method-heading">
+  <h2 id="method-heading">How this was measured</h2>
+  <ul class="plain-list">
+    <li>Each prospect was run once as a rep would: name, company and title, Thorough research, with an email, using that goal.</li>
+    <li>{{ r.method }}</li>
+    <li>"About {{ r.manual_minutes }} minutes by hand" is a typical manual research time per prospect; review time is not included on either side.</li>
+    <li>Costs are what the research and model providers charged: ${{ '%.2f'|format(r.final_spend) }} for the {{ r.n }} final runs, ${{ '%.2f'|format(r.total_spend) }} for all {{ r.runs }} runs including re-runs after fixes.</li>
+    <li>Fifteen prospects is a small sample. It shows the process works across different roles, companies and pitches; it does not measure reply rates.</li>
+  </ul>
+</section>
+{% endblock %}

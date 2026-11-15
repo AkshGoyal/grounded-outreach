@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+{% if error %}<h1>Backup not created</h1><p class="error">{{ error }}</p><a href="/">Return to workspace →</a>{% else %}
+<h1>Workspace backed up</h1>
+<p class="note">The database, campaign text{% if has_key %} and mailbox encryption key{% endif %} are saved together and verified.</p>
+<a class="button primary" href="/backups/{{ download }}">Download workspace backup</a>
+<p class="warning">Keep this archive private. It contains contacts, conversations{% if has_key %} and the key that unlocks saved mailbox credentials{% endif %}. Store it securely outside this workspace.</p>
+<table>
+  <thead><tr><th>Table</th><th class="num">Rows saved</th></tr></thead>
+  <tbody>
+  {% for table, count in counts.items() %}
+    <tr {% if table == 'suppressions' %}class="highlight"{% endif %}>
+      <td>{{ table }}{% if table == 'suppressions' %}
+        <span class="tag">cannot be rebuilt from anywhere else</span>{% endif %}</td>
+      <td class="num">{{ count }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="note">Provider API keys, OAuth client secrets and the .env file are excluded. Reconfigure them when restoring. Stop the app before restoring; follow the laptop setup guide.</p>
+{% endif %}
+{% endblock %}

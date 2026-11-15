@@ -1,0 +1,29 @@
+{% set form_values = form_values|default({}) %}
+<form class="panel audience-form guided-form" method="post" action="{{ intake_action or ('/research/' ~ run.id ~ '/intake' if run else '/research/intake') }}" data-save-draft data-server-values="{{ 'true' if form_error or run or campaign_context else 'false' }}" data-server-error="{{ 'true' if form_error else 'false' }}" data-draft-version="{{ run.updated_at if run else source_run.updated_at if source_run else '' }}">
+<input type="hidden" name="input_mode" value="prompt">
+{% if source_run %}<input type="hidden" name="parent_run" value="{{ source_run.id }}">{% endif %}
+{% if editing_full %}<input type="hidden" name="edit_view" value="1">{% endif %}
+{% if form_error %}<div class="warning" role="alert" tabindex="-1" data-form-error>{{ form_error }}</div>{% endif %}
+<label class="large-label">Who would you like to reach?<textarea id="audience-goal" name="brief" rows="5" minlength="20" maxlength="6500" required placeholder="Find textile manufacturers in India. Contact founders or senior management to discuss RFD cotton thread supply. Exclude trading-only businesses.">{{ intake.goal or '' }}</textarea></label>
+<p class="field-help">Include the companies, location, contact roles and goal in one prompt. Saving is free; you review the interpreted plan before paid research.</p>
+{% if run and questions %}<p class="notice">We need a little more detail: {{ questions|join(' ') }} Add it to your prompt, or use the detailed inputs below.</p>{% endif %}
+<details class="setup-section" {% if form_error or (run and questions) %}open{% endif %}><summary>Optional: check or use detailed audience inputs</summary>
+<div class="form-grid"><label>Company type<input name="company_type" maxlength="300" value="{{ intake.company_type or '' }}" placeholder="e.g. textile manufacturers"></label><label>Where should we look?<input name="geography" maxlength="300" value="{{ intake.geography or '' }}" placeholder="e.g. India, Bangalore, or Anywhere"></label></div>
+<fieldset class="role-choices"><legend>Who can receive your outreach?</legend>{% for value,label in contact_roles.items() %}<label class="check role-choice"><input type="checkbox" name="contact_roles" value="{{ value }}" {% if value in (intake.contact_roles or []) %}checked{% endif %}>{{ label }}</label>{% endfor %}</fieldset>
+<label>Must-haves<textarea name="must_haves" rows="2" maxlength="300">{{ intake.must_haves or '' }}</textarea></label>
+<label>Exclude<textarea name="audience_exclusions" rows="2" maxlength="300">{{ intake.exclusions or '' }}</textarea></label>
+<label>What should we learn for your email?<textarea name="personalisation" rows="2" maxlength="300">{{ intake.personalisation or '' }}</textarea></label>
+<button class="secondary" name="action" value="save_details">Save detailed audience & review plan →</button>
+<p class="field-help">This button uses these detailed inputs. The main button below interprets your overall prompt instead.</p>
+</details>
+<details class="setup-section" {% if form_error %}open{% endif %}><summary>{{ "Next batch size & spending cap (optional)" if campaign_context else "Optional: research limits, fallback contacts and organisation" }}</summary>
+<label>Search approach<select name="research_mode"><option value="focused" {% if intake.research_mode!='flexible' %}selected{% endif %}>Requested roles only</option><option value="flexible" {% if intake.research_mode=='flexible' %}selected{% endif %}>Allow general business inbox fallbacks</option></select></label>
+<p class="field-help">General inboxes count only if you request them or allow fallbacks. No addresses are guessed.</p>
+{% if contact_research_enabled %}<label>Known companies (optional)<textarea name="seed_websites" rows="3" maxlength="2500" placeholder="Company name | https://company-website">{{ intake.seed_websites or '' }}</textarea></label>{% endif %}
+<label>Audience name<input name="title" maxlength="120" value="{{ form_values.get('title',run.title if run else '') }}" placeholder="Optional; otherwise uses your prompt"></label>
+<label>Purpose<select name="purpose"><option value="">Use the goal in my prompt</option>{% for p,label in [('sales','Find customers'),('job search','Find job opportunities'),('partnerships','Find partners'),('other','Something else')] %}<option value="{{ p }}" {% if form_values.get('purpose',run.purpose if run else '')==p %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+<div class="form-grid"><label>Companies with published emails<input name="target" type="number" min="1" max="25" value="{{ form_values.get('target',run.target_count if run else 5) }}" required></label><label>Maximum research spend (USD)<input name="budget" type="number" min="0.10" max="{{ max_budget }}" step="0.01" value="{{ form_values.get('budget',run.budget if run else default_budget) }}" required></label></div>
+<p class="field-help">Saving and the basic plan are free. Paid research needs a separate approval; the cap may stop it before the target.</p>
+</details>
+<div class="actions"><button name="action" value="save_prompt">{{ save_label or 'Save audience & review plan →' }}</button><span class="muted">Free · No API spend</span></div>
+<span class="muted" data-draft-status role="status"></span></form>

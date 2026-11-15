@@ -1,0 +1,5 @@
+{% if continuation %}<section class="panel next-action" aria-label="Continue this audience">
+<p class="eyebrow">WHERE YOU ARE · AUDIENCE {{ run.id[:6] }}</p><h2>{{ continuation.label }}</h2><p>{{ continuation.detail }}</p>
+{% if continuation.action=='resume' %}<form method="post" action="/research/{{ run.id }}/resume"><button>Continue approved research (paid checks)</button><p class="field-help">Completed requests are reused. This can make new paid requests within the remaining cap.</p></form>{% else %}<a class="button secondary" href="{{ continuation.href }}">{{ continuation.label }} →</a>{% endif %}
+{% if campaign_context %}<p class="field-help">Campaign: <a href="/campaigns/{{ campaign_context.id }}">{{ campaign_context.name }}</a></p>{% else %}<p class="field-help">This audience is independent. Choose which found emails to add to a campaign.</p>{% endif %}
+</section>{% endif %}

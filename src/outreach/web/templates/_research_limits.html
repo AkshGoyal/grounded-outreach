@@ -1,0 +1,12 @@
+{% if audience_continuity_enabled and not active and not run.archived and not run.deleted and run.plan %}
+<details id="research-limits" class="panel compact" {% if run.execution.outcome=='budget_limit' %}open{% endif %}>
+<summary>Continue research / change target and budget</summary>
+<p>Keep this run's saved companies and completed requests. The cap is a <strong>total for this run</strong>, including the ${{ '%.4f'|format(run.spent) }} already accounted. Saving these limits makes no API call.</p>
+<form method="post" action="/research/{{ run.id }}/limits">
+<div class="form-grid"><label>Target companies<input type="number" name="target" min="1" max="25" value="{{ run.target_count }}" required></label><label>Total cap (USD)<input type="number" name="budget" min="0.10" max="{{ max_budget }}" step="0.01" value="{{ run.budget }}" required></label></div>
+<label class="check"><input type="checkbox" name="confirm">I approve an increased total cap if I enter one.</label>
+<button class="secondary">Save limits (free)</button>
+</form>
+{% if run.approved_at and run.status in ['paused','failed','approved'] and not work_summary.needs_check %}<form method="post" action="/research/{{ run.id }}/resume"><p>Then resume from the saved checkpoint. Completed requests are reused; uncertain requests must be checked first.</p><button class="secondary">Continue research within this cap</button></form>{% endif %}
+<p class="field-help">Change company type, location or preferred roles with <a href="/research/{{ run.id }}/edit">Edit audience</a>. That saves a new version under this audience and requires a fresh plan approval.</p>
+</details>{% endif %}

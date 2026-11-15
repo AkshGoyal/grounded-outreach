@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block title %}Find more contacts · Outreach{% endblock %}{% block body %}
+{% include '_campaign_header.html' %}
+<h2>Find more contacts for this campaign</h2>
+<p class="intro">You have {{ contact_count }} contacts in this campaign. Start another research batch, then review and add the contacts you approve. Existing emails and replies stay intact.</p>
+{% if not campaign_open %}<p class="warning">This campaign is {{ metadata.status }}. <a href="/campaigns/{{ campaign_id }}/settings">Reopen it in Edit campaign</a> before creating another batch.</p>{% endif %}
+
+{% if campaign_open %}
+<details class="panel compact" {% if not source_run %}open{% endif %}><summary>Choose a different saved audience (optional)</summary><form method="get" action="/campaigns/{{ campaign_id }}/research"><label>Start from saved audience<select name="source"><option value="">Use this campaign's latest audience</option>{% for r in saved_audiences %}<option value="{{ r.id }}" {% if source_run and source_run.id==r.id %}selected{% endif %}>{{ r.title }}</option>{% endfor %}</select></label><button class="secondary">Use this audience</button></form><p class="field-help">This fills the form below. You can edit the goal, audience, batch size and spending cap before saving.</p></details>
+{% if source_run %}<p class="notice">Next version of audience <a href="/research/{{ source_run.id }}">{{ source_run.title }}</a>. Each new batch stays in this audience’s history and has its own spending cap and approval. Existing campaign members are skipped when adding reviewed contacts.</p>{% endif %}
+{% include "_campaign_research_batch.html" %}
+{% if related_runs %}<details class="panel compact"><summary>Your research batches ({{ related_runs|length }})</summary><p>Continue unfinished checks before starting another batch. A company target is not a guarantee of email addresses.</p><div class="card-grid">{% for r in related_runs if not r.deleted %}<article class="work-card"><h4>{{ r.title }}</h4><span class="badge">{{ 'Archived' if r.archived else r.status|friendly_status }}</span><p>{{ r.lead_count }} saved companies · ${{ '%.4f'|format(r.spent) }} accounted spend</p><div class="actions"><a class="button secondary" href="/research/{{ r.id }}">Open results / progress</a><a href="/research/{{ r.id }}/edit">Edit audience</a><a class="button secondary remove-link" href="/workspace/audience/{{ r.id }}/remove">Delete / archive</a></div></article>{% endfor %}</div></details>{% endif %}
+{% endif %}{% endblock %}

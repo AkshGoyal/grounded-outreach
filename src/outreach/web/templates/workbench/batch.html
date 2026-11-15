@@ -1,0 +1,50 @@
+{% extends 'workbench/base.html' %}
+{% block title %}Batch | Outreach Workbench{% endblock %}
+{% set runs = batch.runs %}
+{% set active = runs|selectattr('execution_status', 'in', ['queued', 'running'])|list %}
+{% set approved = [] %}{% set to_review = [] %}{% set need_you = [] %}
+{% for run in runs %}
+  {% set state = run.review.state if run.draft and run.review else None %}
+  {% if state == 'approved' %}{% set _ = approved.append(run) %}
+  {% elif state == 'ready_for_review' %}{% set _ = to_review.append(run) %}
+  {% elif run.execution_status not in ('queued', 'running') %}{% set _ = need_you.append(run) %}{% endif %}
+{% endfor %}
+{% block head %}{% if active %}<meta http-equiv="refresh" content="4">{% endif %}{% endblock %}
+{% block body %}
+{% set outcome_labels = {'research_ready': 'Research ready', 'needs_more_evidence': 'Needs more evidence', 'needs_identity_confirmation': 'Choose the person', 'research_unavailable': 'Research unavailable', 'needs_revision': 'Needs a fix', 'ready_for_review': 'Ready for review', 'approved': 'Approved', 'draft_rejected': 'Draft rejected'} %}
+{% set next_labels = {'ready_for_review': 'Review the draft', 'needs_revision': 'Fix the draft', 'approved': 'Copy the email', 'research_ready': 'Write the draft', 'needs_identity_confirmation': 'Choose the person', 'needs_more_evidence': 'See what was found', 'research_unavailable': 'See what happened', 'draft_rejected': 'Edit the draft'} %}
+<div class="run-head">
+  <a class="back-link" href="/history">All prospects</a>
+  <div class="run-title">
+    <h1>Batch of {{ runs|length }} prospect{{ '' if runs|length == 1 else 's' }}</h1>
+    <p class="run-identity">Started <time datetime="{{ batch.created_at }}">{{ batch.created_at|when }}</time>, {{ batch.mode }} mode</p>
+  </div>
+</div>
+<section class="run-status tone-{{ 'progress' if active else 'good' }}" aria-label="Batch status" data-batch-status="{{ 'running' if active else 'finished' }}">
+  <h2 class="status-headline">{% if active %}Researching: {{ runs|length - active|length }} of {{ runs|length }} finished{% elif to_review or need_you %}Research finished. {{ to_review|length + need_you|length }} to go through.{% else %}All done{% endif %}</h2>
+  <p class="next-step" data-batch-counts>{{ to_review|length }} ready to review, {{ need_you|length }} need{{ 's' if need_you|length == 1 else '' }} a closer look, {{ approved|length }} approved.{% if active %} This page updates by itself.{% endif %}</p>
+  <div class="status-actions">
+    {% set first = (to_review + need_you)|first %}
+    {% if first %}<a class="primary-action" href="/runs/{{ first.id }}" data-review-next>{{ 'Review the next draft' if to_review else 'Open the next one' }}</a>{% endif %}
+    {% if approved %}<a class="secondary-action" href="/batches/{{ batch.id }}/export" data-batch-export>Download {{ approved|length }} approved email{{ '' if approved|length == 1 else 's' }}</a>{% endif %}
+  </div>
+</section>
+<section class="card history-card" aria-label="Prospects in this batch">
+  <div class="history-labels" aria-hidden="true"><span>Prospect</span><span>Status</span><span>Hook</span><span></span><span>Next</span></div>
+  <ol class="history-list">
+    {% for run in runs %}
+    {% set state = run.review.state if run.draft and run.review else None %}
+    {% set shown = state or run.business_outcome %}
+    {% set hook = run.result.get('hook') if run.result else None %}
+    {% set tone = 'progress' if run.execution_status in ('queued', 'running') else ('good' if shown in ('approved', 'ready_for_review') else ('failure' if run.execution_status in ('failed', 'interrupted') else 'attention')) %}
+    <li class="history-row" data-run-id="{{ run.id }}" data-run-state="{{ run.execution_status }}">
+      <div class="history-prospect"><h3><a class="history-open" href="/runs/{{ run.id }}">{{ run.prospect.name }}</a></h3><p>{% if run.prospect.role %}{{ run.prospect.role }} at {% endif %}{{ run.prospect.company }}</p></div>
+      <div class="history-status tone-{{ tone }}"><strong class="chip">{% if run.execution_status == 'queued' %}Waiting{% elif run.execution_status == 'running' %}Researching{% elif run.execution_status in ('failed', 'interrupted') and not shown %}Stopped{% else %}{{ outcome_labels.get(shown, shown|replace('_', ' ')|capitalize) }}{% endif %}</strong></div>
+      <span class="batch-hook">{% if hook %}{{ {'strong': 'Strong hook', 'moderate': 'Good hook', 'weak': 'Weaker hook', 'none': 'Not personalised'}.get(hook.get('strength'), 'Hook found') }}{% endif %}</span>
+      <span></span>
+      <span class="history-next" aria-hidden="true">{{ 'Watch progress' if run.execution_status in ('queued', 'running') else next_labels.get(shown, 'Open') }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

@@ -1,0 +1,69 @@
+{
+  "note": "Evaluation set for the Outreach Workbench. The three offers and their senders are fictional. The prospects are real public executives, named in public announcements; only name, company and title are stored here.",
+  "manual_minutes_per_prospect": 20,
+  "goals": [
+    {
+      "id": "finance",
+      "label": "Invoice review for finance leaders",
+      "goal": {
+        "sender_name": "Alex Morgan",
+        "sender_company": "ClearLedger Demo",
+        "offer": "Invoice review and exception routing for finance teams",
+        "intended_role": "Finance leaders responsible for invoice operations",
+        "capabilities": "Review invoice information against supplied purchase-order records.\nShow exceptions and route them for human resolution.",
+        "proof_points": "Finance teams often find invoice exceptions late, at month-end close.",
+        "looking_for": "",
+        "cta": "Would a short walkthrough of invoice exception review be useful?"
+      },
+      "prospects": [
+        {"name": "Eric Stober", "company": "Innventure", "role": "Chief Financial Officer", "why": "Recent appointment at a small listed company"},
+        {"name": "John Vandemore", "company": "Levi Strauss & Co.", "role": "Chief Financial Officer", "why": "Recent appointment; predecessor in the same news"},
+        {"name": "Mark Long", "company": "Supermicro", "role": "Chief Financial Officer", "why": "Common name; heavily covered company"},
+        {"name": "Matthew Latino", "company": "FuelCell Energy", "role": "Chief Financial Officer", "why": "Recent appointment; predecessor stays as adviser"},
+        {"name": "Bobby Crain", "company": "CK Supply", "role": "Chief Financial Officer", "why": "Small private company, little press"}
+      ]
+    },
+    {
+      "id": "people",
+      "label": "New-hire onboarding for HR leaders",
+      "goal": {
+        "sender_name": "Sam Carter",
+        "sender_company": "Brightdesk Demo",
+        "offer": "New-hire onboarding plans that HR teams can track step by step",
+        "intended_role": "HR leaders responsible for onboarding and employee experience",
+        "capabilities": "Send each new hire a personal checklist of paperwork, equipment and training before their first day.\nShow HR which onboarding steps are stuck and who they are waiting on.",
+        "proof_points": "HR teams often learn that a new hire's paperwork or laptop is missing on the first morning.",
+        "looking_for": "",
+        "cta": "Would a short look at a sample onboarding plan be useful?"
+      },
+      "prospects": [
+        {"name": "Christina Schelling", "company": "Verizon", "role": "Chief People Officer", "why": "Recent appointment at a very large company"},
+        {"name": "Nai De Leon", "company": "Yum! Brands", "role": "Chief People and Culture Officer", "why": "Recent internal promotion"},
+        {"name": "Marlies Hersbach", "company": "MANGO", "role": "Chief People Officer", "why": "Non-US company; trade-press coverage"},
+        {"name": "Ida Malmqvist", "company": "HiQ", "role": "Chief People Officer", "why": "Smaller Nordic company; sources may not be in English"},
+        {"name": "Moonmoon Varma", "company": "Coda", "role": "Chief People Officer", "why": "Company name shared by several firms"}
+      ]
+    },
+    {
+      "id": "it",
+      "label": "Access reviews for IT leaders",
+      "goal": {
+        "sender_name": "Jordan Lee",
+        "sender_company": "Keyline Demo",
+        "offer": "Access reviews for IT and security teams",
+        "intended_role": "IT leaders responsible for systems access and audits",
+        "capabilities": "List who has access to each system and when they last used it.\nSend each manager a short review to keep or remove their team's access.",
+        "proof_points": "IT teams often run access reviews by spreadsheet once a year, just before an audit.",
+        "looking_for": "",
+        "cta": "Would a short demo of an access review be useful?"
+      },
+      "prospects": [
+        {"name": "Jason James", "company": "Acumatica", "role": "Chief Information Officer", "why": "Recent appointment; very common name"},
+        {"name": "Mike Heuer", "company": "Quantum", "role": "Chief Information Officer", "why": "Recent appointment; company name is a common word"},
+        {"name": "Joel Chaplin", "company": "Precisely", "role": "Chief Information Officer", "why": "Internal promotion; announcement date unclear"},
+        {"name": "Dave Shuman", "company": "Precisely", "role": "Chief Data Officer", "why": "Adjacent role, not the exact target audience"},
+        {"name": "George Forbes", "company": "U.S. Department of Commerce", "role": "Chief Information Officer", "why": "Government, not a company"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{# What the run should do, and the pitch it is for. Shared by one-prospect and list forms. #}
+{% set purpose = options.get('purpose') or ('email' if options.write_draft else ('goal' if options.use_goal else 'none')) %}
+<section class="start-step" aria-labelledby="purpose-heading">
+  <h2 id="purpose-heading" class="step-title">What do you want?</h2>
+  <input type="hidden" name="options" value="1">
+  <div class="purpose-choices" role="radiogroup" aria-labelledby="purpose-heading" data-purpose>
+    <label class="purpose"><input type="radio" name="purpose" value="email" {% if purpose == 'email' %}checked{% endif %}>
+      <span><strong>Write an email for my goal</strong><span class="option-detail">Research, then a short email built around one sourced detail.</span></span></label>
+    <label class="purpose"><input type="radio" name="purpose" value="goal" {% if purpose == 'goal' %}checked{% endif %}>
+      <span><strong>Research for my goal</strong><span class="option-detail">What we found, ranked by how well it fits your goal. Write the email later if you like.</span></span></label>
+    <label class="purpose"><input type="radio" name="purpose" value="none" {% if purpose == 'none' %}checked{% endif %}>
+      <span><strong>Just research</strong><span class="option-detail">Recent news about the person, with no goal in mind.</span></span></label>
+  </div>
+  <div class="pitch" data-pitch>
+    {% include 'workbench/_goal.html' %}
+  </div>
+</section>

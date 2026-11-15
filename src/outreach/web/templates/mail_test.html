@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% block body %}
+<p><a href="/accounts">← Email accounts</a></p><h1>Test your email connection</h1>
+<section class="panel narrow"><h2>{{ account.label }}</h2><p>From {{ account.sender_name }} &lt;{{ account.email }}&gt;</p>
+{% if not account.verified_at %}<p class="warning">Verify or reconnect this account before sending a test.</p>{% endif %}
+<form method="post" action="/accounts/{{ account.id }}/test">
+<input type="hidden" name="nonce" value="{{ nonce }}">
+<label>Your test inbox<input type="email" name="to" required autocomplete="email"><small>Use an address you control. Campaign contacts and suppressed addresses are blocked.</small></label>
+<label class="check"><input type="checkbox" name="confirmed" required>Send one [TEST] connection message to this address.</label>
+<button {% if not account.verified_at %}disabled{% endif %}>Send one test email</button></form>
+<p class="muted">No AI request or campaign launch. Provider acceptance does not prove inbox delivery. Check arrival, spam and sender authentication. Reply TEST REPLY to check receipt in your normal provider inbox; the campaign inbox stores only matched campaign replies.</p>
+<p>A reused form cannot send twice. After an uncertain result, inspect Sent and the destination before attempting another test.</p></section>
+{% if history %}<section class="panel narrow"><h2>Recent test requests</h2><p>These saved outcomes survive restarts. Pending or uncertain tests need manual inspection before another send.</p><ul>{% for item in history %}<li><strong>{{ item.status }}</strong> · {{ item.recipient }}<p>{{ item.result or 'No final receipt saved. Inspect Sent and the destination before retrying.' }}</p></li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

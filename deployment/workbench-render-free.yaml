@@ -1,0 +1,31 @@
+# Workbench Outreach Workbench on Render's free plan (the submission link).
+# Free web services sleep after 15 minutes without visits (about a minute to wake) and
+# have no persistent disk, so saved runs reset whenever the service restarts or
+# redeploys. For history that survives restarts, use workbench-render.yaml (paid, with a disk).
+services:
+  - type: web
+    name: outreach-workbench-workbench
+    runtime: python
+    branch: workbench/batch
+    plan: free
+    numInstances: 1             # one worker: runs, claims and the ledger are single-process
+    autoDeployTrigger: "off"
+    buildCommand: pip install uv==0.13.5 && uv sync --locked --no-dev --python 3.11
+    # Live mode: at most $0.05 per run and $0.50 per UTC day across all runs.
+    startCommand: .venv/bin/python -m outreach.workbench --hosted --mode live --budget-usd 0.05 --daily-usd 0.50
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"
+      - key: WORKBENCH_DATA_DIR
+        value: /tmp/workbench              # temporary on the free plan
+      - key: WORKBENCH_APP_PASSWORD        # evaluator login; share it privately, never in the repo
+        generateValue: true
+      - key: OUTREACH_PARALLEL_API_KEY
+        sync: false                  # pasted in the Render dashboard; never committed
+      - key: OUTREACH_OPENROUTER_API_KEY
+        sync: false
+      - key: OUTREACH_WORKBENCH_RESEARCH_MODELS
+        value: anthropic/claude-haiku-5.5,anthropic/claude-haiku-4.5,deepseek/deepseek-v4.1-flash
+      - key: OUTREACH_WORKBENCH_DRAFT_MODELS
+        value: anthropic/claude-sonnet-5.5,anthropic/claude-haiku-5.5,anthropic/claude-haiku-4.5

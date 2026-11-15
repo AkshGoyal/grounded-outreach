@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Outreach Workbench{% endblock %}</title>
+  <link rel="stylesheet" href="/static/workbench.css?v={{ asset_version['workbench.css'] }}">
+  <script src="/static/workbench.js?v={{ asset_version['workbench.js'] }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+{% set current_mode = run.mode if run is defined and run else mode %}
+{% set here = active_page|default('') %}
+<body>
+  <div class="nav-progress" aria-hidden="true" data-nav-progress></div>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="shell">
+    <header class="sidebar">
+      <a class="brand" href="/research/new"><span class="brand-mark" aria-hidden="true"></span>Outreach Workbench</a>
+      {% if here != 'login' %}
+      <nav aria-label="Main navigation" class="side-nav">
+        <a href="/research/new" {% if here in ('new', 'batch') %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">＋</span>New prospect</a>
+        <a href="/history" {% if here in ('history', 'run') %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">◷</span>History</a>
+        <a href="/evaluation" {% if here == 'evaluation' %}aria-current="page"{% endif %}><span class="nav-icon" aria-hidden="true">✓</span>Evaluation</a>
+      </nav>
+      {% endif %}
+      <div class="side-foot">
+        <span data-mode="{{ current_mode }}" title="{{ 'Fictional example data, no paid calls' if current_mode == 'fixture' else 'Real public web research, paid within a limit' }}" class="mode-label">{{ current_mode|capitalize }}</span>
+        <p class="side-note">{% if current_mode == 'fixture' %}Example mode: every person, company and source is fictional. No paid calls.{% else %}Live mode: public web sources, within a small limit per prospect.{% endif %} Nothing is ever emailed from here.</p>
+      </div>
+    </header>
+    <main id="main" class="page" tabindex="-1">
+      {% block body %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

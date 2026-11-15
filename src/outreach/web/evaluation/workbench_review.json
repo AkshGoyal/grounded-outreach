@@ -1,0 +1,32 @@
+{
+ "method": "Each final email was read against the hook passage and its public source. Verdicts: send = would send as written; edit = one small wording change first; check = confirm a fact before sending. 'Wrong facts' counts any statement about the prospect or company that the source does not support. Reviewed by the builder (Claude, on Aksh's behalf), not by an independent SDR.",
+ "first_attempt": {"reached_review": 14, "strong_hooks": 10, "first_pass": 13, "runs": 21, "spend_micro": 435936},
+ "fixes": [
+  {"found_on": "Christina Schelling, Verizon", "problem": "Typed title 'Chief People Officer' did not match 'Executive Vice President, Chief People Officer' on the page, so the run stopped to ask which person.", "fix": "Titles now match across rank, abbreviations and fuller forms; different jobs still differ."},
+  {"found_on": "Christina Schelling, Verizon", "problem": "Verizon's own bio page puts the name and title on separate lines, so it never counted as proof of identity.", "fix": "Profile pages with the name on one line and the title on the next now confirm identity."},
+  {"found_on": "Nai De Leon, Yum! Brands", "problem": "The appointment on yum.com was not treated as Yum! Brands' own site because the address is shorter than the company name.", "fix": "A web address that is the start or the initials of the company name counts as the company's site."},
+  {"found_on": "Christina Schelling, Verizon", "problem": "The company's own 'pleased to announce' release was set aside as undated.", "fix": "Announcements on the company's site or a wire service are dated by the day they were published; news sites still are not."},
+  {"found_on": "Christina Schelling, Verizon", "problem": "Natural phrases ('That's why I'm writing', 'HR', 'probably', 'just as much') were blocked as unsupported claims, costing a second writing call.", "fix": "The sender explaining their own email, the goal's own words and ordinary caution words no longer block."},
+  {"found_on": "Joel Chaplin, Precisely", "problem": "'Prior to joining Precisely…' was chosen as the hook over what he does now.", "fix": "What the person does now ranks above where they worked before."},
+  {"found_on": "Joel Chaplin, Precisely", "problem": "'Leading global IT' was blocked as a boast.", "fix": "'Leading a team' is allowed; 'a leading provider' is still blocked."},
+  {"found_on": "Eric Stober, Innventure (before the evaluation)", "problem": "A departing executive's news, filed under the same label, made the appointment look like a date conflict.", "fix": "News about different named people is never treated as one event."},
+  {"found_on": "John Vandemore, Levi Strauss & Co. (before the evaluation)", "problem": "'A new finance chief often starts by…' was blocked as an uncautious claim.", "fix": "'Often', 'usually' and 'typically' count as caution for a general observation."}
+ ],
+ "emails": {
+  "Eric Stober": {"verdict": "send", "note": "Finance and accounting under him is from Innventure's own announcement."},
+  "John Vandemore": {"verdict": "send", "note": "Appointment from Levi Strauss's own release; no date or predecessor mentioned."},
+  "Mark Long": {"verdict": "send", "note": "Supermicro's own newsroom; a common name confirmed correctly."},
+  "Matthew Latino": {"verdict": "send", "note": "From the SEC filing; predecessor correctly left out."},
+  "Bobby Crain": {"verdict": "send", "note": "Small private company; growth across the Midwest is from CK Supply's own site."},
+  "Christina Schelling": {"verdict": "send", "note": "Verizon's own announcement. 'A workforce as large as yours' is general, not a number."},
+  "Nai De Leon": {"verdict": "edit", "note": "'In my experience' speaks for the sender; better as 'HR teams often…'."},
+  "Marlies Hersbach": {"verdict": "edit", "note": "Hook is MANGO's new store opening, which is accurate; the subject 'new store teams' stretches it slightly."},
+  "Ida Malmqvist": {"verdict": "send", "note": "HiQ's own English release; smaller Nordic company handled fine."},
+  "Moonmoon Varma": {"verdict": "send", "note": "Right Coda (coda.co) among several companies of that name."},
+  "Jason James": {"verdict": "send", "note": "Very common name; matched to Acumatica's own release."},
+  "Mike Heuer": {"verdict": "send", "note": "Quantum's investor release; 'Quantum' is a common word and was handled."},
+  "Joel Chaplin": {"verdict": "edit", "note": "'This replaces that scramble' is a mild promise; drop it."},
+  "Dave Shuman": {"verdict": "send", "note": "A data role, adjacent to the IT audience; the email stays on access, which fits."},
+  "George Forbes": {"verdict": "check", "note": "Government role, identity not confirmed on an official page; the tool marks the hook as weaker. Confirm before sending."}
+ }
+}

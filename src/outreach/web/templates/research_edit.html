@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block title %}Edit audience · Outreach{% endblock %}{% block body %}
+<a class="breadcrumb" href="/research/{{ run.id }}">← Back to original audience</a><h1>Edit audience</h1>
+{% if in_place %}<p class="intro">Update your saved draft. Saving is free and starts no research.</p>
+{% else %}<section class="notice"><h2>Save your idea as the next version</h2><p>Change any inputs below. Saving creates a new version inside this audience for free. The original plan, results and spending record stay intact; prepare the basic plan for free, then approve paid research.</p>{% if original_active %}<p>The original research is still using its approved inputs. Pause it if you want to stop further work.</p>{% if run.status=="running" %}<form method="post" action="/research/{{ run.id }}/pause"><button class="secondary">Pause original research</button></form>{% else %}<p>The current planning request cannot be changed mid-request. Company research still requires plan approval.</p>{% endif %}{% endif %}</section>{% endif %}
+{% include '_audience_intake.html' %}{% endblock %}

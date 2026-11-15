@@ -1,0 +1,49 @@
+{% extends 'workbench/base.html' %}
+{% block title %}History | Outreach Workbench{% endblock %}
+{% block body %}
+{% set execution_labels = {'queued': 'Queued', 'running': 'In progress', 'completed': 'Completed', 'failed': 'Failed', 'interrupted': 'Interrupted'} %}
+{% set outcome_labels = {'research_ready': 'Research ready', 'needs_more_evidence': 'Needs more evidence', 'needs_identity_confirmation': 'Needs identity confirmation', 'research_unavailable': 'Research unavailable', 'needs_revision': 'Needs revision', 'ready_for_review': 'Ready for review', 'approved': 'Approved', 'draft_rejected': 'Draft rejected'} %}
+{% set outcome_tones = {'approved': 'good', 'ready_for_review': 'good', 'research_ready': 'good', 'research_unavailable': 'failure'} %}
+{% set next_labels = {'ready_for_review': 'Review the draft', 'needs_revision': 'Fix the draft', 'approved': 'Copy the email', 'research_ready': 'Write the draft', 'needs_identity_confirmation': 'Choose the person', 'needs_more_evidence': 'See what was found', 'research_unavailable': 'See what happened', 'draft_rejected': 'Edit the draft'} %}
+<div class="page-head">
+  <div><h1>History</h1><p class="lede">Every prospect you researched, with its sources, draft and review status.{% if showcase %} Rows marked <a href="/evaluation">Evaluation</a> are the {{ showcase|length }} real prospects from the evaluation; open any of them to see the full run.{% endif %}</p></div>
+  {% if runs %}<a class="primary-action" href="/research/new">New prospect</a>{% endif %}
+</div>
+{% if runs %}
+{% set board = dashboard(runs) %}
+<section class="overview" aria-label="Overview" data-dashboard>
+  <div class="tile"><p class="tile-number">{{ board.counts.total }}</p><p class="tile-label">Prospects researched</p></div>
+  <div class="tile tile-progress"><p class="tile-number">{{ board.counts.running }}</p><p class="tile-label">Working now</p></div>
+  <div class="tile tile-fact"><p class="tile-number">{{ board.counts.review }}</p><p class="tile-label">Ready for you</p></div>
+  <div class="tile tile-fact"><p class="tile-number">{{ board.counts.approved }}</p><p class="tile-label">Approved</p></div>
+  <div class="tile tile-call"><p class="tile-number">{{ board.counts.attention }}</p><p class="tile-label">Need a closer look</p></div>
+  {% if board.live_runs %}<div class="tile"><p class="tile-number">${{ '%.3f'|format(board.average) }}</p><p class="tile-label">Average cost per prospect, ${{ '%.2f'|format(board.spent) }} in all</p></div>{% endif %}
+</section>
+{% if board.with_hook %}
+<section class="card strength-card" aria-labelledby="mix-heading">
+  <h2 id="mix-heading">How strong the hooks are</h2>
+  <div class="strength-bar" role="img" aria-label="{{ board.strengths.strong }} strong, {{ board.strengths.moderate }} good, {{ board.strengths.weak }} weaker, {{ board.strengths.none }} not personalised">
+    {% for key in ['strong', 'moderate', 'weak', 'none'] %}{% if board.strengths[key] %}<span class="bar-{{ key }}" style="flex:{{ board.strengths[key] }}"></span>{% endif %}{% endfor %}
+  </div>
+  <p class="strength-legend">{% for key, label in [('strong', 'Strong'), ('moderate', 'Good'), ('weak', 'Weaker'), ('none', 'Not personalised')] %}<span class="key-{{ key }}">{{ board.strengths[key] }} {{ label }}</span>{% endfor %}</p>
+</section>
+{% endif %}
+<section class="card history-card" aria-label="Saved research runs">
+  <div class="history-labels" aria-hidden="true"><span>Prospect</span><span>Status</span><span>Started</span><span>Mode</span><span>Next</span></div>
+  <ol class="history-list">
+    {% for saved in runs %}
+    {% set tone = 'progress' if saved.execution_status in ('queued', 'running') else ('failure' if saved.execution_status in ('failed', 'interrupted') else outcome_tones.get(saved.business_outcome, 'attention')) %}
+    <li class="history-row" data-run-id="{{ saved.id }}">
+      <div class="history-prospect"><h2><a class="history-open" href="/runs/{{ saved.id }}">{{ saved.prospect.name }}</a></h2><p>{{ saved.prospect.company }}{% if saved.mode == 'live' and saved.usage.get('settled_micro') %}, ${{ '%.3f'|format(saved.usage.settled_micro / 1000000) }}{% endif %}{% if saved.result and saved.result.get('hook') %}, {{ {'strong': 'Strong hook', 'moderate': 'Good hook', 'weak': 'Weaker hook', 'none': 'Not personalised'}.get(saved.result.hook.get('strength'), 'Hook found') }}{% endif %}</p>{% if saved.first_output %}<p class="history-output">{{ saved.first_output }}</p>{% endif %}</div>
+      <div class="history-status tone-{{ tone }}">{% if saved.business_outcome %}<strong class="chip">{{ outcome_labels.get(saved.business_outcome, saved.business_outcome|replace('_', ' ')|capitalize) }}</strong>{% else %}<strong class="chip">{{ execution_labels.get(saved.execution_status, saved.execution_status|replace('_', ' ')|capitalize) }}</strong>{% endif %}<span class="hint">{{ execution_labels.get(saved.execution_status, saved.execution_status|replace('_', ' ')|capitalize) }}</span></div>
+      <time datetime="{{ saved.created_at }}">{{ saved.created_at|when }}</time>
+      <span class="quiet-label">{% if showcase and saved.id in showcase %}<a href="/evaluation" class="showcase-tag" title="One of the 15 real prospects in the evaluation">Evaluation</a>{% else %}{{ saved.mode|capitalize }}{% endif %}</span>
+      <span class="history-next" aria-hidden="true">{{ 'Watch progress' if saved.execution_status in ('queued', 'running') else next_labels.get(saved.business_outcome, 'Open') }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% else %}
+<section class="card empty-state"><h2>Your first prospect starts here</h2><p>Each prospect you research is saved here with its sources, draft and status, so you can come back to it.</p><a class="primary-action" href="/research/new">Start research</a></section>
+{% endif %}
+{% endblock %}

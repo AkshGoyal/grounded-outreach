@@ -1,0 +1,34 @@
+{% set active_page = 'login' %}
+{% extends 'workbench/base.html' %}
+{% block title %}Sign in | Outreach Workbench{% endblock %}
+{% block body %}
+{% set proof = eval_headline() %}
+<div class="login-wrap">
+  <section class="login-pitch" aria-labelledby="login-pitch-heading">
+    <h1 id="login-pitch-heading">First emails worth replying to, researched in seconds</h1>
+    <p class="lede">Name a prospect. The workbench reads public sources, picks one real detail about them, and drafts a short email for your pitch. Every sentence is tied to a source, and nothing is sent until you approve it.</p>
+    {% if proof %}
+    <ul class="login-proof" aria-label="Tested on 15 real executives">
+      {% for item in proof[:3] %}<li><strong>{{ item.value }}</strong><span>{{ item.label }}</span></li>{% endfor %}
+    </ul>
+    <p class="hint">Measured on 15 real executives across three different pitches.</p>
+    {% endif %}
+  </section>
+  <section class="card login-card" aria-labelledby="login-heading">
+    <h2 id="login-heading">Sign in</h2>
+    {% if locked %}<p class="notice notice-error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" action="/login" data-login-form>
+      <div class="field{% if wrong_password %} has-error{% endif %}">
+        <label for="workspace-password">Workspace password</label>
+        <div class="password-field">
+          <input id="workspace-password" name="password" type="password" autocomplete="current-password" required autofocus{% if wrong_password %} aria-invalid="true" aria-describedby="password-error"{% endif %}>
+          <button type="button" class="link-button" data-show-password aria-controls="workspace-password" aria-pressed="false">Show</button>
+        </div>
+        {% if wrong_password %}<p class="field-error" id="password-error" role="alert">That password isn't right. Check it and try again{% if tries_left is defined and tries_left <= 2 %}: {{ tries_left }} {{ 'try' if tries_left == 1 else 'tries' }} left before a one-minute pause{% endif %}.</p>{% elif error and not locked %}<p class="field-error" role="alert">{{ error }}</p>{% endif %}
+      </div>
+      <button type="submit" class="primary-action login-submit" data-busy-label="Signing in…">Sign in</button>
+      <p class="hint login-wait" data-login-wait hidden>Opening the workbench. If it has been idle, the server can take up to a minute to wake.</p>
+    </form>
+  </section>
+</div>
+{% endblock %}

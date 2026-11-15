@@ -1,0 +1,9 @@
+{% if audience_handoff_enabled %}
+<div class="panel compact attachment-summary">
+<h3>Current campaign attachments · {{ attachments|length }} files</h3>
+<p class="muted">These same files go with every initial email in this campaign, including a test email. Replies do not automatically include them.</p>
+{% for file in attachments %}<p><a href="/campaigns/{{ campaign_id }}/attachments/{{ file.id }}/download">{{ file.filename }}</a> · {{ (file.size / 1024)|round(1) }} KB</p>{% else %}<p>No attachments added.</p>{% endfor %}
+<a href="{{ '/campaigns/'~campaign_id~'/attachments' if audience_handoff_enabled else '#app-update' }}">Add or manage attachments →</a>
+</div>
+
+{% else %}<p class="notice">Restart the app once to add and review email attachments. See the update notice above.</p>{% endif %}

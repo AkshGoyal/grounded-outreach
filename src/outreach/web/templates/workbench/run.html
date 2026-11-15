@@ -1,0 +1,418 @@
+{% extends 'workbench/base.html' %}
+{% set execution_labels = {'queued': 'Queued', 'running': 'Research in progress', 'completed': 'Execution completed', 'failed': 'Execution failed', 'interrupted': 'Execution interrupted'} %}
+{% set outcome_labels = {'research_ready': 'Research ready', 'needs_more_evidence': 'Needs more evidence', 'needs_identity_confirmation': 'Needs identity confirmation', 'research_unavailable': 'Research unavailable', 'needs_revision': 'Needs revision', 'ready_for_review': 'Ready for review', 'approved': 'Approved', 'draft_rejected': 'Draft rejected'} %}
+{% set review_labels = {'ready_for_review': 'Ready for review', 'needs_revision': 'Needs revision', 'approved': 'Approved', 'rejected': 'Rejected', 'stale': 'Evidence changed — check again'} %}
+{% set origin_labels = {'fixture': 'Example draft', 'model': 'Written by the model', 'repair': 'Model repair', 'reviewer': 'Your edit', 'template': 'Built-in template'} %}
+{% set result = run.result or {} %}
+{% set sources = result.get('sources') or run.get('source_records') or [] %}
+{% set hook = result.get('hook') %}
+{% set hook_ids = hook.source_ids if hook else [] %}
+{% set review_state = run.review.state if run.draft and run.review else None %}
+{% set running = run.execution_status in ('queued', 'running') %}
+{% set stopped = run.execution_status in ('failed', 'interrupted') %}
+{% set source_titles = {} %}{% set held_reasons = {} %}
+{% for signal in result.get('rejected_signals') or [] %}{% if signal.get('source_id') %}{% set _ = held_reasons.update({signal.source_id: signal.get('reason')}) %}{% endif %}{% endfor %}
+{% for source in sources %}{% set _ = source_titles.update({source.id: source.title or source.publisher or 'Source'}) %}{% endfor %}
+{# Where the run stands: 0 person, 1 hook, 2 draft, 3 approval; 4 = all done. #}
+{% if review_state == 'approved' %}{% set step, step_state = 4, 'done' %}
+{% elif review_state == 'ready_for_review' %}{% set step, step_state = 3, 'current' %}
+{% elif run.draft %}{% set step, step_state = 2, 'attention' %}
+{% elif run.business_outcome == 'needs_identity_confirmation' %}{% set step, step_state = 0, 'attention' %}
+{% elif run.business_outcome == 'research_ready' and hook and (run.campaign.get('no_goal') or not run.limits.get('write_draft', 1)) %}{% set step, step_state = 2, 'todo' %}
+{% elif run.business_outcome in ('needs_more_evidence', 'research_unavailable', 'research_ready') %}{% set step, step_state = 1, 'attention' %}
+{% elif running %}{% set step, step_state = (1 if result.get('identity') else 0), 'current' %}
+{% else %}{% set step, step_state = 0, 'attention' %}{% endif %}
+{% if running %}{% set tone = 'progress' %}
+{% elif stopped or run.business_outcome == 'research_unavailable' %}{% set tone = 'failure' %}
+{% elif review_state == 'approved' or review_state == 'ready_for_review' or run.business_outcome == 'research_ready' %}{% set tone = 'good' %}
+{% else %}{% set tone = 'attention' %}{% endif %}
+{% set first_name = run.prospect.name.split(' ')[0] %}
+{% set ref_of, ref_list = references(run) %}
+{% if running %}{% set headline = 'Researching ' ~ first_name ~ '…' %}
+{% elif stopped %}{% set headline = 'This run stopped before it finished' %}
+{% elif review_state == 'approved' %}{% set headline = 'Approved. Ready to copy.' %}
+{% elif review_state == 'ready_for_review' and hook and hook.get('strength') == 'none' %}{% set headline = 'A draft is ready, but it is not personalised' %}
+{% elif review_state == 'ready_for_review' and hook and hook.get('strength') == 'weak' %}{% set headline = 'Your draft is ready. Its hook is on the weaker side.' %}
+{% elif review_state == 'ready_for_review' %}{% set headline = 'Your draft is ready to review' %}
+{% elif review_state == 'needs_revision' %}{% set headline = 'The draft needs a fix before it can be approved' %}
+{% elif review_state == 'rejected' %}{% set headline = 'You rejected this draft' %}
+{% elif review_state == 'stale' %}{% set headline = 'The evidence changed. Check the draft again.' %}
+{% elif run.business_outcome == 'needs_identity_confirmation' %}{% set headline = 'Which ' ~ run.prospect.name ~ ' do you mean?' %}
+{% elif run.business_outcome == 'needs_more_evidence' %}{% set headline = 'Not enough public evidence for an honest email' %}
+{% elif run.business_outcome == 'research_unavailable' %}{% set headline = 'Research could not be completed' %}
+{% elif run.business_outcome == 'research_ready' and (run.campaign.get('no_goal') or not run.limits.get('write_draft', 1)) %}{% set headline = 'Here is what we found about ' ~ first_name %}
+{% elif run.business_outcome == 'research_ready' %}{% set headline = 'Research saved, no draft yet' %}
+{% else %}{% set headline = 'Saved run' %}{% endif %}
+{% set compact = run.draft and not running and not stopped %}
+{% block title %}{{ run.prospect.name }} | Outreach Workbench{% endblock %}
+{% block body %}
+<div class="run-head">
+  <a class="back-link" href="/history">All prospects</a>
+  <div class="run-title">
+    <h1>{{ run.prospect.name }}</h1>
+    <p class="run-identity">{% if run.prospect.role %}{{ run.prospect.role }} at {% endif %}{{ run.prospect.company }}</p>
+  </div>
+  <a class="secondary-action" href="/research/new">New prospect</a>
+</div>
+
+<ol class="progress{% if compact %} is-quiet{% endif %}" aria-label="Progress">
+  {% for label in ['Confirm the person', 'Find a real hook', 'Draft and check', 'Approve and copy'] %}
+  {% set state = 'done' if loop.index0 < step else (step_state if loop.index0 == step else 'todo') %}
+  <li class="progress-step is-{{ state }}" {% if loop.index0 == step %}aria-current="step"{% endif %}><span class="progress-dot" aria-hidden="true"></span><span class="progress-label">{{ label }}</span><span class="visually-hidden">: {{ {'done': 'done', 'current': 'in progress', 'attention': 'needs you', 'todo': 'not started'}[state] }}</span></li>
+  {% endfor %}
+</ol>
+
+{% if batch %}
+<nav class="batch-nav" aria-label="Prospects in this list" data-batch-nav>
+  <span class="batch-count">{{ batch.position }} of {{ batch.total }}</span>
+  <ol class="batch-steps">
+    {% for item in batch.runs %}<li><a href="/runs/{{ item.id }}" class="batch-step is-{{ item.state }}" {% if item.id == run.id %}aria-current="page"{% endif %} title="{{ {'working': 'Researching', 'ready': 'Ready to review', 'approved': 'Approved', 'attention': 'Needs a closer look'}[item.state] }}"><span class="batch-dot" aria-hidden="true"></span>{{ item.name }}<span class="visually-hidden">, {{ {'working': 'researching', 'ready': 'ready to review', 'approved': 'approved', 'attention': 'needs a closer look'}[item.state] }}</span></a></li>{% endfor %}
+  </ol>
+  <span class="batch-move">{% if batch.previous %}<a href="/runs/{{ batch.previous }}">Previous</a>{% endif %}{% if batch.next %}<a href="/runs/{{ batch.next }}" data-batch-next>Next prospect</a>{% endif %}<a href="/batches/{{ batch.id }}" class="batch-all">Whole list</a></span>
+</nav>
+{% endif %}
+<section class="run-status tone-{{ tone }}{% if compact %} is-compact{% endif %}" aria-label="Run status">
+  <h2 class="status-headline">{{ headline }}</h2>
+  <p class="next-step"{% if compact %} hidden{% endif %}>{% if not running and run.business_outcome == 'research_ready' and hook and run.campaign.get('no_goal') %}Research only, without a goal. Every finding links to the page it came from.{% elif not running and run.business_outcome == 'research_ready' and hook and not run.limits.get('write_draft', 1) %}Research only. Every finding links to its page; you can turn the top one into an email any time.{% elif running %}Checking who they are, reading public sources and checking dates. A draft is written only if the evidence holds up.{% elif result.get('next_action') %}{{ result.next_action }}{% elif stopped %}{{ result.get('reason') or 'The work stopped before a complete result was saved.' }}{% else %}The saved stages at the bottom show where the work stopped.{% endif %}</p>
+  <div class="status-actions">
+    {% if compact %}
+    {% elif run.business_outcome == 'needs_identity_confirmation' and result.get('identity') %}<a class="primary-action" href="#confirm-heading">Choose the right person</a>
+    {% elif run.business_outcome == 'research_ready' and hook and not running and not run.campaign.get('no_goal') %}<a class="primary-action" href="#draft">{{ 'Write the draft' }}</a>
+    {% elif run.business_outcome == 'research_ready' and hook and not running %}<a class="primary-action" href="#draft">See what we found</a>
+    {% endif %}
+    {% if run.business_outcome in ('needs_more_evidence', 'needs_identity_confirmation') or (hook and hook.get('strength') in ('weak', 'none') and review_state != 'approved' and not running) %}<a class="secondary-action" href="/research/new?from_run={{ run.id }}">Try another source</a>{% endif %}
+  </div>
+  <p class="status-meta">{% if compact %}<span class="visually-hidden"><span data-execution-status>{{ execution_labels.get(run.execution_status, run.execution_status|replace('_', ' ')|capitalize) }}</span>{% if run.business_outcome %}, <span class="outcome-label" data-business-outcome>{{ outcome_labels.get(run.business_outcome, run.business_outcome|replace('_', ' ')|capitalize) }}</span>{% endif %}. </span>{% if hook and hook.get('strength') %}<span>{{ {'strong': 'Strong hook', 'moderate': 'Good hook', 'weak': 'Weaker hook', 'none': 'Not personalised'}[hook.strength] }}</span><span class="dot" aria-hidden="true">·</span>{% endif %}<span>Took {{ duration(run) }}</span>{% if run.mode == 'live' %}<span class="dot" aria-hidden="true">·</span><span>Cost ${{ '%.3f'|format(run.usage.get('settled_micro', 0) / 1000000) }}</span>{% endif %}{% else %}<span class="status-label" data-execution-status>{{ execution_labels.get(run.execution_status, run.execution_status|replace('_', ' ')|capitalize) }}</span>{% if run.business_outcome %}<span class="dot" aria-hidden="true">·</span><span class="outcome-label" data-business-outcome>{{ outcome_labels.get(run.business_outcome, run.business_outcome|replace('_', ' ')|capitalize) }}</span>{% endif %}<span class="dot" aria-hidden="true">·</span><span>Started <time datetime="{{ run.created_at }}">{{ run.created_at|when }}</time></span>{% endif %}</p>
+  <p class="poll-status" role="status" aria-live="polite" data-poll-status>{% if running %}This page updates by itself. Refreshing is safe.{% endif %}</p>
+</section>
+
+{% if error %}<div class="notice notice-error" role="alert" data-action-error><h2>{{ error_title or 'Action not accepted' }}</h2><p>{{ error }}</p><p>{% if error_title == 'Confirmation not accepted' %}Nothing new was started. Review the saved candidates below.{% else %}Nothing was approved or exported. Your entered text is kept below.{% endif %}</p></div>{% endif %}
+{% if stopped %}
+<div class="notice notice-error"><h2>{{ execution_labels.get(run.execution_status) }}</h2><p>{{ result.get('reason') or 'The work stopped before a complete result was saved. Completed stage events remain available below.' }}</p><p>This run will not restart automatically. Check saved requests before starting further paid work.</p></div>
+{% endif %}
+
+{% macro run_timeline(open_steps) %}
+{% set phases = timeline(run) %}
+<div class="run-timeline" data-timeline>
+  <p class="timeline-meta">
+    {% if running %}<span>Elapsed <strong data-elapsed data-start="{{ run.created_at }}">{{ duration(run) }}</strong></span>{% else %}<span>Took <strong>{{ duration(run) }}</strong></span>{% endif %}
+    {% if run.mode == 'live' %}<span>{{ 'Spent so far' if running else 'Cost' }} <strong data-spent>${{ '%.3f'|format(run.usage.get('settled_micro', 0) / 1000000) }}</strong></span>{% else %}<span>Example mode, no cost</span>{% endif %}
+  </p>
+  <ol class="phases">
+    {% for phase in phases %}
+    <li class="phase phase-{{ phase.state }}" data-phase="{{ phase.key }}" data-phase-state="{{ phase.state }}">
+      <span class="phase-dot" aria-hidden="true"></span>
+      <div class="phase-body">
+        <p class="phase-title">{{ phase.title }} <span class="phase-state">{{ {'done': 'Done', 'current': 'Working…', 'todo': '', 'skipped': 'Skipped: research only', 'warn': 'Done, with a note'}[phase.state] }}</span></p>
+        {% if phase.steps and (open_steps or phase.state in ('current', 'warn')) %}
+        <ul class="phase-steps">
+          {% for step in phase.steps %}<li class="step-{{ step.status }}">{{ step.label }}{% if step.status == 'failed' and step.detail %}<span class="step-detail">{{ step.detail }}</span>{% endif %}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endmacro %}
+
+{% macro stage_list() %}
+{% if run.stages %}
+<ol class="stage-timeline" data-stage-events>
+  {% for stage in run.stages %}
+  <li class="stage-event stage-{{ stage.status }}">
+    <div class="stage-line"><strong>{{ stage.name|replace('_', ' ')|capitalize }}</strong><span class="stage-state">{{ stage.status|capitalize }}</span><time datetime="{{ stage.created_at }}">{{ stage.created_at[11:19] }} UTC</time></div>
+    {% if stage.detail %}<p>{{ stage.detail }}</p>{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}<p class="muted">The run is queued. Its first saved step will appear here.</p>{% endif %}
+{% endmacro %}
+
+{% if running %}
+<section class="card live-steps" aria-labelledby="live-steps-heading">
+  <h2 id="live-steps-heading">Working on {{ first_name }}</h2>
+  {{ run_timeline(true) }}
+</section>
+{% endif %}
+
+{% if run.business_outcome == 'needs_identity_confirmation' and result.get('identity') %}
+<section class="card identity-confirmation" aria-labelledby="confirm-heading">
+  <h2 id="confirm-heading">Confirm the prospect</h2>
+  <p>More than one current person matches this name. Choose the one you mean. A different company cannot be chosen for this run, and nothing about the other person is used.</p>
+  <div class="candidate-grid">
+  {% for candidate in result.identity.get('candidates', []) %}
+    <article class="identity-candidate{% if candidate.selectable %} is-selectable{% endif %}">
+      <h3>{{ candidate.name }}, {{ candidate.company }}</h3>
+      <p class="candidate-role">{{ candidate.role }}{% if candidate.status %} ({{ candidate.status }}){% endif %}</p>
+      <blockquote>{{ candidate.quote }}</blockquote>
+      <p class="hint">{{ candidate.reason }}</p>
+      {% if candidate.selectable and run.mode == mode %}<form method="post" action="/runs/{{ run.id }}/confirm-prospect"><input type="hidden" name="candidate_id" value="{{ candidate.id }}"><input type="hidden" name="evidence_version" value="{{ run.evidence_version }}"><button class="primary-action" type="submit">Confirm prospect</button><p class="hint">Continues within this run's remaining limit.</p></form>{% else %}<p class="candidate-blocked">Not selectable for {{ run.prospect.company }}.</p>{% endif %}
+    </article>
+  {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="workbench{% if run.draft %} has-draft{% endif %}">
+  {% if run.draft %}
+  {% set draft = run.draft %}{% set review = run.review %}{% set state = review.state %}
+  {% set shown = edited or draft %}
+  {% set general_errors = draft.check.errors|rejectattr('text')|list %}
+  <section class="card draft-panel" id="draft" aria-labelledby="draft-heading" data-review-state="{{ state }}">
+    <div class="panel-head email-head"><h2 id="draft-heading">Email</h2><span class="review-state review-{{ state }}"><strong class="chip" data-review-label>{{ review_labels.get(state, state) }}</strong></span></div>
+    {% if state not in ('ready_for_review', 'approved') %}
+    <p class="review-note review-{{ state }}">
+      {% if state == 'approved' %}This exact version is approved. Any edit, or any change to its evidence, removes the approval.
+      {% elif state == 'ready_for_review' %}Every sentence passed the checks.
+      {% elif state == 'needs_revision' %}{{ draft.check.errors|length }} problem{{ '' if draft.check.errors|length == 1 else 's' }} to fix before you can approve.
+      {% elif state == 'rejected' %}Edit the email and check it again to make a new version.
+      {% else %}The saved evidence or offer no longer matches this draft. Check it again before approving.{% endif %}</p>
+    {% endif %}
+    {% if draft.origin == 'template' and state != 'approved' %}
+    <div class="notice template-note" data-template-draft>
+      <p><strong>This email was written by the built-in template, not the model.</strong> It restates the hook and your offer in plain words. Edit it below{% if run.mode == 'live' %}, or ask the model to write it{% endif %}.</p>
+      {% if run.mode == 'live' %}<form method="post" action="/runs/{{ run.id }}/draft/write" class="form-actions" data-write-draft>
+        <button type="submit" class="secondary-action">Write it with the model</button>
+        <p class="hint" data-write-hint>One writing request, about $0.012.</p>
+      </form>{% endif %}
+    </div>
+    {% endif %}
+    {% set blocking = draft.check.segments|selectattr('status', 'equalto', 'error')|list %}
+    {% if blocking and state != 'approved' %}
+    <ul class="blocking-list" aria-label="Sentences to fix">
+      {% for segment in blocking %}<li><q>{{ segment.text }}</q>{% for issue in segment.issues if issue.severity == 'error' %}<span>{{ issue.message }}</span>{% endfor %}{% if segment.part == 'body' and segment.role != 'cta' %}
+        <form method="post" action="/runs/{{ run.id }}/draft/check" class="remove-sentence" data-remove-blocking>
+          <input type="hidden" name="base_revision" value="{{ draft.revision }}"><input type="hidden" name="remove" value="{{ segment.text }}">
+          <button type="submit" class="link-button">Remove this sentence</button>
+        </form>{% endif %}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if state == 'approved' %}
+    <div class="approved-copy">
+      <pre class="export-copy" data-export-copy>Subject: {{ draft.subject }}
+
+{{ draft.body }}</pre>
+      <div class="form-actions"><button type="button" class="primary-action" data-copy-approved data-export-url="/runs/{{ run.id }}/export">Copy approved draft</button><a class="secondary-action" href="/runs/{{ run.id }}/export?download=1">Download .txt</a></div>
+      <p class="hint" role="status" aria-live="polite" data-copy-status>Copies only the approved version, without the review notes. Nothing is sent.</p>
+    </div>
+    {% endif %}
+
+    {% if state != 'approved' %}
+    {% set view = annotate(run) %}
+    <div class="letter" data-annotated aria-label="The email, with each claim marked">
+      <p class="letter-to"><span>To</span> {{ run.prospect.name }}, {{ run.prospect.company }}</p>
+      {% macro mark(piece) -%}
+        {%- if piece.kind == 'gap' or (piece.kind == 'plain' and not piece.get('edit')) -%}{{ piece.text }}
+        {%- elif piece.kind == 'plain' -%}<span class="sent" data-sentence data-why="" role="button" tabindex="0">{{ piece.text }}</span>
+        {%- else -%}<span class="mark mark-{{ piece.kind }}{% if piece.get('edit') %} sent{% endif %}"{% if piece.note %} title="{{ piece.note }}"{% endif %} data-mark="{{ piece.kind }}"{% if piece.get('edit') %} data-sentence data-why="{{ piece.note }}" role="button" tabindex="0"{% endif %}>{{ piece.text }}</span>{% for n in piece.refs %}<a class="ref" href="#{{ 'campaign-brief' if n == 'G' else 'ref-' ~ n }}" aria-label="{{ 'From your goal' if n == 'G' else 'Source ' ~ n }}">{{ n }}</a>{% endfor %}
+        {%- endif -%}
+      {%- endmacro %}
+      {% if view.subject %}{% set _ = view.subject.update({'edit': True}) %}{% endif %}
+      <p class="letter-subject"><span>Subject</span> {% if view.subject %}{{ mark(view.subject) }}{% else %}{{ draft.subject }}{% endif %}</p>
+      <div class="letter-body">{% for piece in view.body %}{{ mark(piece) }}{% endfor %}</div>
+      <form method="post" action="/runs/{{ run.id }}/draft/check" class="sentence-editor" data-sentence-editor hidden>
+        <input type="hidden" name="base_revision" value="{{ draft.revision }}"><input type="hidden" name="replace" value="">
+        <p class="sentence-why" data-sentence-why></p>
+        <label class="visually-hidden" for="sentence-text">Edit this sentence</label>
+        <textarea id="sentence-text" name="replacement" rows="2" maxlength="600" required></textarea>
+        <div class="form-actions"><button type="submit" class="primary-action">Save</button><button type="submit" name="remove_it" value="1" class="secondary-action" formnovalidate data-sentence-remove>Remove</button><button type="button" class="link-button" data-sentence-cancel>Cancel</button></div>
+      </form>
+      <p class="letter-legend" aria-label="What the colours mean"><span class="key key-core">About them</span><span class="key key-support">Bridge</span><span class="key key-goal">Your pitch</span><span class="key key-optional">Optional</span><span class="key key-block">Blocks approval</span><span class="key-refs">Numbers are sources. Click a sentence to edit or remove it.</span></p>
+      {% set optional = view.body|selectattr('kind', 'equalto', 'optional')|list %}
+      {% if optional %}
+      <div class="optional-bar" data-optional>
+        <p><strong>{{ optional|length }} optional sentence{{ '' if optional|length == 1 else 's' }}.</strong> {% for piece in optional %}<q>{{ piece.text|truncate(70) }}</q>{% if piece.note %} {{ piece.note }}{% endif %}{{ ' ' if not loop.last }}{% endfor %}</p>
+        <form method="post" action="/runs/{{ run.id }}/draft/check"><input type="hidden" name="base_revision" value="{{ draft.revision }}"><input type="hidden" name="remove_optional" value="1"><button type="submit" class="secondary-action">Remove {{ 'it' if optional|length == 1 else 'them' }}</button></form>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if state != 'approved' %}
+    <div class="review-actions" data-action-bar>
+      <form method="post" action="/runs/{{ run.id }}/draft/approve" data-approve-form>
+        <input type="hidden" name="revision" value="{{ draft.revision }}"><input type="hidden" name="content_hash" value="{{ draft.content_hash }}">
+        <button type="submit" class="primary-action" {% if state != 'ready_for_review' %}disabled aria-describedby="approve-help"{% endif %}>Approve draft</button>
+        <p class="hint" id="approve-help">{% if state == 'ready_for_review' %}Every sentence passed the checks. Approving locks this exact text.{% else %}Available once every sentence passes the checks.{% endif %}</p>
+      </form>
+      <details class="reject-draft"><summary>Reject draft</summary>
+        <form method="post" action="/runs/{{ run.id }}/draft/reject"><input type="hidden" name="revision" value="{{ draft.revision }}">
+          <div class="field"><label for="reject-note">Reason <span class="optional">optional</span></label><input id="reject-note" name="note" maxlength="500"></div>
+          <button type="submit" class="secondary-action">Reject this version</button></form>
+      </details>
+    </div>
+    {% endif %}
+
+    <details class="disclosure more-draft" {% if edited or state in ('stale', 'rejected') %}open{% endif %} data-more-draft>
+    <summary>Edit the whole email, see each sentence's check, or earlier versions <span class="quiet-label">version {{ draft.revision }}, {{ origin_labels.get(draft.origin, draft.origin)|lower }}</span></summary>
+    <details class="edit-email" {% if edited or state in ('needs_revision', 'stale', 'rejected') %}open{% endif %}>
+    <summary>Edit the email</summary>
+    <form method="post" action="/runs/{{ run.id }}/draft/check" class="composer" data-draft-form {% if state == 'approved' %}aria-describedby="edit-removes-approval"{% endif %}>
+      <input type="hidden" name="base_revision" value="{{ draft.revision }}">
+      {% if state == 'approved' %}<p class="hint" id="edit-removes-approval">Editing creates a new version that needs checking and approval again.</p>{% endif %}
+      <p class="composer-to"><span>To</span>{{ run.prospect.name }}, {{ run.prospect.company }}</p>
+      <div class="composer-field"><label for="draft-subject">Subject</label><input id="draft-subject" name="subject" value="{{ shown.subject }}" maxlength="200" required></div>
+      <div class="composer-field composer-body"><label for="draft-body">Email body</label><textarea id="draft-body" name="body" rows="12" maxlength="4000" required aria-describedby="draft-words">{{ shown.body }}</textarea></div>
+      <div class="composer-foot">
+        <p class="hint" id="draft-words">{{ draft.check.word_count }} words. Aim for 70 to 120.</p>
+        <p class="hint edit-status" role="status" aria-live="polite" data-edit-status></p>
+        <button type="submit" class="{{ 'primary-action' if state in ('needs_revision', 'stale', 'rejected') else 'secondary-action' }}">Check edits</button>
+      </div>
+    </form>
+    </details>
+
+    {% set checked = draft.check.segments|rejectattr('role', 'in', ['greeting', 'signoff'])|list %}
+    {% set n_block = checked|selectattr('status', 'equalto', 'error')|list|length %}
+    {% set n_call = checked|selectattr('status', 'equalto', 'notice')|list|length %}
+    {% set n_ok = checked|selectattr('status', 'equalto', 'supported')|list|length %}
+    <details class="claim-review" aria-labelledby="claims-heading" {% if n_block %}open{% endif %} data-sentence-check>
+      <summary><span id="claims-heading" class="claim-summary-title">Sentence check</span>
+        <span class="claim-counts"><span class="count-ok">{{ n_ok }} backed by a source</span>{% if n_call %}<span class="count-call">{{ n_call }} your call</span>{% endif %}{% if n_block %}<span class="count-block">{{ n_block }} blocking</span>{% endif %}</span></summary>
+      <p class="hint">What backs each sentence. Point at a source tag to see it on the right. Remove any sentence you don't want. These notes are not part of the copied email.</p>
+      {% if general_errors %}<div class="notice notice-error"><ul>{% for issue in general_errors %}<li>{{ issue.message }}</li>{% endfor %}</ul></div>{% endif %}
+      <ol class="claim-list">
+      {% for segment in draft.check.segments if segment.role not in ('greeting', 'signoff') %}
+        <li class="claim claim-{{ segment.status }}" data-claim-status="{{ segment.status }}">
+          <p class="claim-text">{% if segment.part == 'subject' %}<span class="claim-part">Subject</span>{% endif %}{{ segment.text }}</p>
+          <p class="claim-meta"><span class="claim-status">{{ {'supported': 'Backed by a source', 'error': 'Blocks approval', 'notice': 'Your call'}.get(segment.status) }}</span>
+          {% if segment.role == 'cta' %}<span>Campaign call to action, exact</span>{% else %}{% for kind in segment.kinds %}<span>{{ {'fact': 'Fact', 'offer': 'Offer claim', 'inference': 'Cautious inference'}.get(kind, kind) }}</span>{% endfor %}
+          {% for support in segment.support_ids %}{% if support in source_titles %}<a class="support-id" href="#source-{{ support }}" data-support="{{ support }}">{{ support }}</a>{% elif support == 'as-entered' %}<a class="support-id" href="#result-heading" data-support="{{ support }}">what you entered</a>{% else %}<a class="support-id support-campaign" href="#campaign-brief" data-support="{{ support }}">{{ support }}</a>{% endif %}{% endfor %}{% endif %}</p>
+          {% if segment.issues %}<ul class="claim-issues">{% for issue in segment.issues %}<li class="issue-{{ issue.severity }}">{{ issue.message }}</li>{% endfor %}</ul>{% endif %}
+          {% if state != 'approved' and segment.role != 'cta' and segment.part == 'body' %}
+          <form method="post" action="/runs/{{ run.id }}/draft/check" class="remove-sentence" data-remove-sentence>
+            <input type="hidden" name="base_revision" value="{{ draft.revision }}"><input type="hidden" name="remove" value="{{ segment.text }}">
+            <button type="submit" class="link-button">Remove this sentence</button>
+          </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ol>
+      {% set loose_notices = draft.check.notices|rejectattr('text')|list %}
+      {% if loose_notices %}<ul class="claim-issues">{% for issue in loose_notices %}<li class="issue-notice">{{ issue.message }}</li>{% endfor %}</ul>{% endif %}
+    </details>
+
+    <details class="disclosure revisions"><summary>Versions and review history ({{ run.drafts|length }})</summary>
+      <ol class="plain-list">{% for item in run.drafts|reverse %}<li>Revision {{ item.revision }}, {{ origin_labels.get(item.origin, item.origin)|lower }}, {{ 'passed checks' if item.supported else 'blocked by checks' }}, <time datetime="{{ item.created_at }}">{{ item.created_at|when }}</time></li>{% endfor %}</ol>
+      {% if review.events %}<ul class="plain-list">{% for event in review.events %}<li>{{ event.action|capitalize }}d revision {{ event.revision }}, <time datetime="{{ event.created_at }}">{{ event.created_at|when }}</time>{% if event.note %}: {{ event.note }}{% endif %}</li>{% endfor %}</ul>{% endif %}
+    </details>
+    </details>
+  </section>
+  {% else %}
+  <section class="card draft-panel draft-empty" id="draft" aria-labelledby="draft-heading">
+    {% set found = findings(run) %}
+    <div class="panel-head"><h2 id="draft-heading">{{ 'What we found' if found else 'Draft email' }}</h2>{% if run.campaign.get('no_goal') %}<span class="quiet-label">Research only, no goal</span>{% elif not run.limits.get('write_draft', 1) %}<span class="quiet-label">Research only</span>{% endif %}</div>
+    {% set draft_stops = [] %}{% for note in result.get('limitations') or [] %}{% if note is string and note.startswith('Drafting stopped') %}{% set _ = draft_stops.append(note) %}{% endif %}{% endfor %}
+    {% if draft_stops %}<p class="notice notice-error" data-draft-stopped>{{ draft_stops[-1] }}</p>{% endif %}
+    {% if found %}
+    {% set pick = run.business_outcome == 'research_ready' and hook and not running and not run.campaign.get('no_goal') %}
+    {% set place = 'main' %}
+    {% include 'workbench/_facts.html' %}
+    {% elif running %}
+    <p class="muted">Findings appear here once the sources are checked.</p>
+    {% else %}
+    <p>Nothing usable was found. Nothing has been made up to fill the gap.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if run.draft %}
+  {% set usable_count = sources|selectattr('access_status', 'in', ['read', 'fixture', 'excerpt'])|list|length %}
+  <aside class="card rail" data-rail aria-label="Why this email">
+    <div class="rail-tabs" role="tablist" aria-label="Evidence">
+      <button type="button" role="tab" class="rail-tab" data-tab="hook" aria-selected="true">Why this hook</button>
+      {% if hook %}<button type="button" role="tab" class="rail-tab" data-tab="found" aria-selected="false">What we found <span class="tab-count">{{ facts(run).chosen|length }}</span></button>{% endif %}
+      <button type="button" role="tab" class="rail-tab" data-tab="sources" aria-selected="false">Sources <span class="tab-count">{{ usable_count }}</span></button>
+    </div>
+  {% endif %}
+  <section class="card hook-panel" aria-labelledby="result-heading" data-tab-panel="hook">
+    <h2 id="result-heading">The hook</h2>
+    {% if hook %}
+      {% set strength = hook.get('strength') %}
+      {% set judgement = hook.get('judgement') %}
+      <p class="hook-when">{% if strength %}<span class="chip strength-{{ strength }}" data-hook-strength="{{ strength }}">{{ {'strong': 'Strong hook', 'moderate': 'Good hook', 'weak': 'Weaker hook', 'none': 'Not personalised'}[strength] }}</span> {% endif %}<span data-hook-time="{{ hook.temporal_label }}">{{ {'Recent event': 'Recent news', 'Evergreen evidence': 'Not time-bound', 'Not verified': 'Not verified'}.get(hook.temporal_label, hook.temporal_label) }}{% if hook.event_date %}, {{ hook.event_date|day }}{% endif %}</span></p>
+      <h3 class="hook-title{% if run.draft %} visually-hidden{% endif %}">{{ hook.title }}</h3>
+      <blockquote class="hook-passage">{{ hook.summary }}</blockquote>
+      {% for source_id in hook_ids %}<p class="hook-source">{% if source_id == 'as-entered' %}From what you entered. Nothing was read to support it.{% else %}From <a href="#source-{{ source_id }}">{{ source_titles.get(source_id, 'the saved source') }}</a>{% endif %}</p>{% endfor %}
+      {% if judgement %}
+      <div class="judgement" data-judgement>
+        <p class="judgement-verdict">{{ judgement.verdict }}</p>
+        <details class="disclosure"><summary>Why it is rated this way</summary>
+        {% if judgement.has %}<ul class="judgement-list has" aria-label="What this hook has">{% for item in judgement.has %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        {% if judgement.lacks %}<ul class="judgement-list lacks" aria-label="What this hook lacks">{% for item in judgement.lacks %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+        {% if hook.get('selection_reasons') %}<ul class="plain-list">{% for factor in hook.selection_reasons %}<li>{{ factor }}</li>{% endfor %}</ul>{% endif %}
+        </details>
+      </div>
+      {% elif result.get('reason') %}<p class="hook-reason">{{ result.reason }}</p>{% endif %}
+      {% if hook.get('selection_reasons') and not judgement %}<details class="disclosure"><summary>Why this one was chosen</summary><ul class="plain-list">{% for factor in hook.selection_reasons %}<li>{{ factor }}</li>{% endfor %}</ul></details>{% endif %}
+    {% elif running %}
+      <p class="muted">The one fact worth mentioning appears here after the sources are checked.</p>
+    {% else %}
+      <p class="no-hook">No hook was chosen.</p>
+      {% if result.get('reason') %}<p>{{ result.reason }}</p>{% endif %}
+    {% endif %}
+  </section>
+
+    {% if run.draft and hook %}
+    <section class="card fact-panel" aria-labelledby="facts-heading" data-tab-panel="found">
+      {% set fold = facts(run) %}
+      <details class="fold" open data-facts-fold>
+      <summary><h2 id="facts-heading">What we found</h2><span class="quiet-label">{{ fold.chosen|length }} chosen{% if fold.extra %}, {{ fold.extra|length }} more{% endif %}{% if fold.set_aside %}, {{ fold.set_aside|length }} set aside{% endif %}</span></summary>
+      {% set pick = run.review.state != 'approved' and hook.get('basis', 'read_source') != 'as_entered' %}
+      {% set place = 'rail' %}
+      {% include 'workbench/_facts.html' %}
+      </details>
+    </section>
+    {% endif %}
+  <section class="card evidence-panel" aria-labelledby="evidence-heading" data-tab-panel="sources">
+    <details class="fold" open data-sources-fold>
+    <summary><h2 id="evidence-heading">Sources</h2><span class="quiet-label">{{ sources|selectattr('access_status', 'in', ['read', 'fixture', 'excerpt'])|list|length }} {{ 'fictional examples' if run.mode == 'fixture' else 'sources' }}</span></summary>
+    {% if result.get('identity') %}
+    <section class="identity-summary" aria-labelledby="identity-heading"><h3 id="identity-heading">Is this the right person?</h3><p>{{ result.identity.summary }}</p></section>
+    {% endif %}
+    {% if result.get('limitations') %}<aside class="notice limitations"><h3>Source limitations</h3><ul>{% for limitation in result.limitations %}<li>{{ limitation }}</li>{% endfor %}</ul></aside>{% endif %}
+    {% if sources %}
+      {% set usable = sources|selectattr('access_status', 'in', ['read', 'fixture', 'excerpt'])|list %}
+      {% set ordered = [] %}{% for item in ref_list %}{% for source in usable if source.id == item.id %}{% set _ = ordered.append(source) %}{% endfor %}{% endfor %}
+      {% for source in usable if source.id not in ref_of %}{% set _ = ordered.append(source) %}{% endfor %}
+      {% for source in ordered %}
+      <article class="source-record{% if source.id in hook_ids %} is-hook{% endif %}" id="source-{{ source.id }}" data-source-id="{{ source.id }}" tabindex="-1">
+        {% if source.id in ref_of %}<span class="anchor" id="ref-{{ ref_of[source.id] }}"></span>{% endif %}
+        <div class="source-top"><h3>{% if source.id in ref_of %}<span class="ref ref-static">{{ ref_of[source.id] }}</span> {% endif %}{{ source.title or 'Saved source' }}</h3>{% if source.id in hook_ids %}<span class="hook-tag">Hook</span>{% elif source.id in held_reasons %}<span class="held-tag">Held back</span>{% endif %}</div>
+        {% if source.publisher %}<p class="source-publisher">{{ source.publisher }}</p>{% endif %}
+        {% if source.access_status == 'excerpt' %}<p class="hint excerpt-note">Search excerpt. The full page was not opened.</p>{% endif %}
+        {% if source.get('passage') %}<blockquote>{{ source.passage }}</blockquote>{% else %}<p class="hint">No passage from this page is used.</p>{% endif %}
+        {% if source.id in held_reasons and source.id not in hook_ids %}<p class="held-reason">{{ held_reasons[source.id] }}</p>{% endif %}
+        <dl class="source-dates"><div><dt>Published</dt><dd>{{ source.get('publication_date')|day }}</dd></div><div><dt>Event date</dt><dd>{{ source.get('event_date')|day }}</dd></div><div><dt>Retrieved</dt><dd>{{ source.get('retrieved_at')|when }}</dd></div></dl>
+        <p class="source-id-line"><span class="support-id">{{ source.id }}</span>{% if source.fixture|default(false) %}<span class="hint">Fictional address, no page was read.</span>{% elif source.url[:8] == 'https://' or source.url[:7] == 'http://' %}<a class="source-link" href="{{ source.url }}" target="_blank" rel="noopener noreferrer">Open source <span class="hint">(new tab)</span></a>{% endif %}</p>
+        {% if source.fixture|default(false) %}<p class="source-url">{{ source.url }}</p>{% endif %}
+      </article>
+      {% endfor %}
+      {% if sources|rejectattr('access_status', 'in', ['read', 'fixture', 'excerpt'])|list %}<details class="disclosure source-diagnostics"><summary>Not usable as proof ({{ sources|rejectattr('access_status', 'in', ['read', 'fixture', 'excerpt'])|list|length }})</summary>{% for source in sources if source.get('access_status') not in ('read', 'fixture', 'excerpt') %}<article><h3>{{ source.get('title') or 'Source' }}{% if source.get('publisher') %}<span class="source-publisher">, {{ source.publisher }}</span>{% endif %}</h3><p class="source-url">{{ source.get('url') or source.get('requested_url') }}</p><p><strong>{{ source.get('access_status', 'unknown')|replace('_', ' ')|capitalize }}</strong>{% if source.get('reason') or source.get('limitation') %}: {{ source.get('reason') or source.get('limitation') }}{% endif %}</p><p class="hint">Not used as proof.</p></article>{% endfor %}</details>{% endif %}
+    {% elif running %}<p class="muted">Sources appear as pages are read.</p>
+    {% else %}<p class="muted">No usable source was saved for this prospect. No facts have been invented to fill the gap.</p>{% endif %}
+    {% if result.get('rejected_signals') %}<details class="disclosure held-back"><summary>Facts held back ({{ result.rejected_signals|length }})</summary><ul class="plain-list">{% for signal in result.rejected_signals %}<li>{% if signal.get('quote') %}<q>{{ signal.quote }}</q> {% endif %}<span class="held-reason">{{ signal.get('reason') or signal.get('rejection_reason') or 'Not sufficiently supported' }}</span></li>{% endfor %}</ul></details>{% endif %}
+    </details>
+  </section>
+{% if run.draft %}</aside>{% endif %}
+</div>
+
+<section class="behind" aria-labelledby="behind-heading">
+  <details class="fold" data-behind-fold>
+  <summary><h2 id="behind-heading" class="behind-heading">Run details</h2><span class="quiet-label">steps, limits and the goal used</span></summary>
+  {% if not running %}
+  <details class="disclosure" open data-run-summary>
+    <summary>How this run went</summary>
+    {{ run_timeline(false) }}
+  </details>
+  <details class="disclosure timeline-paper">
+    <summary>Run steps <span class="quiet-label">{{ run.stages|length }} saved</span></summary>
+    {{ stage_list() }}
+  </details>
+  {% endif %}
+  {% if run.mode == 'live' %}<details class="disclosure request-summary"><summary>Research limits and saved requests</summary><p>Budget: ${{ '%.2f'|format(run.limits.budget_micro / 1000000) }}. Search queries: {{ run.usage.get('search_queries', 0) }}/{{ run.limits.max_search_queries }}. Pages: {{ run.usage.get('pages', 0) }}/{{ run.limits.max_pages }}. Model requests: {{ run.usage.get('model_requests', 0) }}/{{ run.limits.max_model_requests }}.</p><p>Held requests: {{ run.usage.get('held_requests', 0) }}. Completed responses are reused; held requests are never retried automatically.</p></details>{% endif %}
+  {% if run.campaign.get('no_goal') %}<details class="disclosure snapshot-paper" id="campaign-brief"><summary>Goal used for this run</summary><p>None. This was plain research, with no offer in mind.</p></details>{% else %}  <details class="disclosure snapshot-paper" id="campaign-brief"><summary>Goal used for this run</summary><h3>{{ run.campaign.name }}</h3><p>{{ run.campaign.offer }}</p><ol class="plain-list">{% for capability in run.campaign.supported_capabilities %}<li><span class="support-id support-campaign">capability-{{ loop.index }}</span> {{ capability }}</li>{% endfor %}</ol>{% if run.campaign.proof_points %}<ol class="plain-list">{% for point in run.campaign.proof_points %}<li><span class="support-id support-campaign">proof-{{ loop.index }}</span> {{ point }}</li>{% endfor %}</ol>{% endif %}{% if run.campaign.looking_for %}<p><strong>Good reasons to reach out:</strong> {{ run.campaign.looking_for }}</p>{% endif %}<p class="hint">{{ 'Fictional demo offer' if run.campaign.get('fixture') else 'Your goal' }}, from {{ run.campaign.sender }}. Saved with this run. Closing question: {{ run.campaign.cta }}</p></details>{% endif %}
+  </details>
+</section>
+<script type="application/json" id="run-poll-config">{{ {'url': '/runs/' ~ run.id ~ '/status', 'execution_status': run.execution_status, 'updated_at': run.updated_at, 'stage_count': run.stages|length}|tojson }}</script>
+{% endblock %}

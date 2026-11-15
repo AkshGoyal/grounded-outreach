@@ -1,0 +1,13 @@
+from typing import Protocol
+
+
+class ResearchPort(Protocol):
+    def search(
+        self, key: str, objective: str, queries: list[str], *, domains: list[str] | None = None
+    ) -> dict: ...
+
+    def extract(self, key: str, urls: list[str]) -> dict: ...
+
+    def generate(self, key: str, prompt: str, schema): ...
+
+    def close(self): ...

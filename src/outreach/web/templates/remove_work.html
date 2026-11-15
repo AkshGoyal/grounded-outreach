@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}Remove {{ kind }} · Outreach{% endblock %}{% block body %}{% if kind=="audience" and item.family and item.family|length>1 %}<p class="notice">This action applies to all {{ item.family|length }} versions of this audience. Research spending, saved contacts and campaign history are preserved when moving it to Deleted audiences or Archived work.</p>{% endif %}
+<a class="breadcrumb" href="{{ return_to }}">← Back to {{ kind }}</a>
+<h1>Remove {{ kind }}</h1><p class="intro">{{ item.title if kind=='audience' else item.name }}</p>
+{% if working %}<section class="warning"><h2>This work is still running</h2><p>Open its progress page and finish or pause it before deleting. Saved results remain available.</p><a class="button secondary" href="{{ return_to }}">Open current progress</a></section>
+{% elif deleted %}<section class="panel"><h2>This audience is in Deleted audiences</h2><p>It is hidden from active work. Research costs, evidence and campaign history are retained. Restoring starts no research.</p><form method="post" action="/workspace/{{ kind }}/{{ key }}/remove"><button name="action" value="restore">Restore audience</button></form></section>
+{% else %}
+{% if can_delete or can_trash %}<section class="panel removal-panel"><h2>{{ 'Delete this unused draft' if can_delete else 'Delete this audience from active work' }}</h2>
+<p>{% if can_delete %}This permanently removes the unused {{ kind }}. It cannot be undone here. No provider requests or contact history belong to this draft.{% else %}Move it to Deleted audiences. You can restore it later. Costs, source evidence and contacts already added to campaigns are retained; no ongoing campaign emails are cancelled.{% endif %}</p>
+<form method="post" data-busy="{{ 'Deleting the confirmed unused draft.' if can_delete else 'Moving this audience to Deleted audiences and keeping its history.' }}" action="/workspace/{{ kind }}/{{ key }}/remove">
+{% if can_trash %}<input type="hidden" name="deletion_version" value="{{ deletion_version }}">{% endif %}
+<label class="check"><input type="checkbox" name="confirm_delete" value="yes" required>{{ 'I understand this draft will be permanently deleted.' if can_delete else 'I confirm moving this audience to Deleted audiences.' }}</label>
+<div class="actions"><button class="danger-button" name="action" value="delete">Delete {{ kind }}</button><a class="button secondary" href="{{ return_to }}">Keep it</a></div></form></section>
+{% else %}<p class="notice">This campaign has saved work or history. Archive it to clear your main view while keeping contacts, messages and replies.</p>{% endif %}
+<section class="panel compact"><h2>{{ 'Restore from archive' if archived else 'Archive instead' }}</h2><p>{{ 'Make this work visible again. Restored campaigns remain paused.' if archived else 'Keep this work in Archived work. You can restore it later.' }}</p><form method="post" action="/workspace/{{ kind }}/{{ key }}/remove"><button class="secondary" name="action" value="{{ 'restore' if archived else 'archive' }}">{{ 'Restore' if archived else 'Archive' }} {{ kind }}</button></form></section>
+{% endif %}{% endblock %}

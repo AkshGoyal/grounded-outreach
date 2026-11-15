@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Campaign settings' if campaign else 'New campaign' }} · Outreach{% endblock %}
+{% block body %}
+{% set form_values=form_values|default({}) %}
+{% set initial_purpose=initial_purpose|default('sales') %}
+<a class="breadcrumb" href="{{ '/campaigns/'~campaign.id if campaign else '/campaigns' }}">← {{ 'Back to campaign' if campaign else 'Campaigns' }}</a>
+<p class="eyebrow">{{ 'CAMPAIGN SETTINGS' if campaign else 'TURN YOUR AUDIENCE INTO OUTREACH' }}</p>
+<h1>{{ 'Campaign settings' if campaign else 'Create a campaign' }}</h1>
+<p class="intro">{{ 'Update organisation and sending account. Sent history keeps its original account.' if campaign else 'Describe what your emails should say in one editor. Protect exact wording with [KEEP] blocks; contacts and a sending account can be chosen later.' }}</p>
+<form class="panel campaign-setup" method="post" action="{{ '/campaigns/'~campaign.id~'/settings' if campaign else '/campaigns/new' }}" data-save-draft data-server-values="{{ 'true' if form_error or campaign else 'false' }}">
+{% if form_error %}<div class="warning" role="alert">{{ form_error }}</div>{% endif %}
+<details class="setup-section" {% if campaign or form_error %}open{% endif %}><summary>Campaign name and purpose (optional)</summary><label class="large-label">Campaign name<input name="name" maxlength="120" value="{{ form_values.get('name', campaign.name if campaign else '') }}" {% if campaign %}required{% endif %} placeholder="Optional; otherwise uses your message prompt"></label>
+<label>Purpose<select name="purpose"><option value="">Use my message goal</option>{% for p in purposes %}<option {% if form_values.get('purpose',campaign.purpose if campaign else '')==p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></label></details>
+{% if not campaign %}
+{% if list_id %}<section class="setup-section"><h2>Selected contacts</h2><input type="hidden" name="list_id" value="{{ list_id }}"><p>{% for l in lists if l.id==list_id %}{{ l.lead_count }} contacts selected for this campaign. <span class="muted">From {{ l.name }}.</span>{% endfor %}</p>{% if selected_has_prior %}<label class="check"><input name="acknowledge_prior" type="checkbox">Allow selected contacts already used in another campaign.</label>{% endif %}</section>{% else %}<details class="setup-section"><summary>Use an older saved contact list (optional)</summary>
+<label>Saved contact group<select name="list_id"><option value="">Add contacts later</option>{% for l in lists %}<option value="{{ l.id }}" {% if list_id==l.id %}selected{% endif %}>{{ l.name }} · {{ l.lead_count }} contacts</option>{% endfor %}</select></label>
+<p class="muted">A list is an older saved group of contacts. You can skip this and add emails directly after saving.</p>
+<label class="check"><input name="acknowledge_prior" type="checkbox">I reviewed prior outreach and approve any reuse of these contacts.</label></details>{% endif %}
+<section class="setup-section"><h2>What should your emails say?</h2><input type="hidden" name="brief_mode" value="structured">{% include '_message_fields.html' %}</section>
+{% endif %}
+<details class="setup-section" {% if campaign %}open{% endif %}><summary>Sending account (optional until launch)</summary>
+<label>Campaign sending account<select name="account_id"><option value="">Connect or choose an account later</option>{% for a in accounts %}<option value="{{ a.id }}" {% if form_values.get('account_id',campaign.sender_account_id if campaign else '')==a.id %}selected{% endif %}>{{ a.label }} · {{ a.email }}{{ '' if a.verified_at else ' · needs verification' }}</option>{% endfor %}</select></label>
+<p class="muted"><a href="/accounts">Connect Gmail or Zoho</a> before sending. Each campaign can use a different account. Changing the sender requires another approval of unsent drafts.</p></details>
+<details><summary>Organisation and campaign status</summary><div class="form-grid"><label>Project<select name="project_id"><option value="">No project</option>{% for p in projects %}<option value="{{ p.id }}" {% if form_values.get('project_id',campaign.project_id if campaign else '')==p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select></label><label>Tags<input name="tags" maxlength="200" value="{{ form_values.get('tags',campaign.tags if campaign else '') }}" placeholder="AI, Bangalore"></label><label>Status<select name="status">{% for s in states %}<option {% if form_values.get('status',campaign.status if campaign else 'draft')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></label></div><p class="muted">Active requires a verified sender. Paused, completed and archived campaigns cannot send.</p></details>
+<div class="actions"><button>{{ 'Save settings' if campaign else 'Create campaign →' }}</button><span class="muted">No research, drafting or sending starts from this form.</span><span data-draft-status class="muted" role="status"></span></div>
+{% if campaign %}<a href="/campaigns/{{ campaign.id }}/message">Edit email instructions →</a>{% endif %}
+</form>
+{% if campaign and feedback_enabled %}<section class="panel compact removal-panel"><h2>Tidy this campaign</h2><p>Remove an empty draft, or archive saved work and keep its history.</p><a class="button danger-outline" href="/workspace/campaign/{{ campaign.id }}/remove">Delete / archive campaign</a></section>{% endif %}
+{% endblock %}

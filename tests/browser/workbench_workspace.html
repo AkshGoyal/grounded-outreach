@@ -1,0 +1,200 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Workbench fixture browser checks</title>
+<style>iframe{display:block;width:1440px;height:1000px;border:0}pre{white-space:pre-wrap}</style>
+<pre id="result">RUNNING</pre><iframe id="app" title="workbench checks"></iframe>
+<script>
+(async () => {
+  const frame=document.querySelector('iframe'), result=document.querySelector('pre'), checks=[];
+  const assert=(ok,text)=>{if(!ok)throw Error(text);checks.push(text);};
+  const load=path=>new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);frame.src=path;});
+  const audit=(d,label)=>{
+    assert(d.documentElement.scrollWidth<=d.defaultView.innerWidth,label+' has no horizontal overflow');
+    assert([...d.querySelectorAll('input:not([type=hidden]),textarea,select')].every(e=>e.labels.length||e.getAttribute('aria-label')),label+' inputs have labels');
+    assert(!d.querySelector('a[href="/accounts"],a[href="/inbox"],a[href="/setup"]'),label+' excludes legacy navigation');
+    assert(d.querySelector('.mode-label').textContent==='Fixture',label+' labels fixture mode');
+  };
+  const wait=async path=>{
+    for(let i=0;i<100;i++){
+      const saved=await fetch(path+'/status').then(r=>r.json());
+      if(!['queued','running'].includes(saved.execution_status))return saved;
+      await new Promise(r=>setTimeout(r,50));
+    }
+    throw Error('Fixture worker did not finish');
+  };
+  let d=await load('/history');assert(d.body.textContent.includes('Your first prospect starts here'),'History starts empty');
+  d=await load('/research/new');audit(d,'New research');
+  let form=d.querySelector('[data-prospect-form]');
+  assert(!form.querySelector('[name=email]'),'The prospect email is not collected');
+  assert(form.querySelector('[name=name]').value==='Maya Rao','Fictional prospect is ready to replay');
+  form.querySelector('[name=name]').value=' ';
+  const invalid=await fetch('/research',{method:'POST',body:new FormData(form)});
+  assert(invalid.status===422,'Server rejects insufficient identity');
+  const invalidText=await invalid.text();assert(invalidText.includes('Cedar Works')&&invalidText.includes('data-form-errors'),'Invalid input preserves entries and explains errors');
+  form.querySelector('[name=name]').value='Maya Rao';
+  const data=new FormData(form);
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);form.querySelector('button[type=submit]').click();});
+  const path=frame.contentWindow.location.pathname;
+  assert(path.startsWith('/runs/'),'Form opens saved run detail');
+  const saved=await wait(path);
+  assert(saved.execution_status==='completed'&&saved.business_outcome==='ready_for_review','No-email prospect reaches a checked draft ready for review');
+  const duplicate=await fetch('/research',{method:'POST',body:data});
+  assert(new URL(duplicate.url).pathname===path,'Duplicate submission returns the same run');
+  d=await load(path);audit(d,'Run detail');
+  assert(d.querySelectorAll('[data-source-id]').length===2,'Both fictional source records are visible');
+  assert(!d.querySelector('.source-record a'),'Fictional source addresses do not open nonexistent pages');
+  assert(d.querySelector('[data-review-label]').textContent==='Ready for review'&&!d.querySelector('[data-copy-approved]'),'Draft is ready for review but not approved');
+  assert(d.querySelector('[data-stage-events]').children.length===saved.stages.length,'Timeline renders actual saved events');
+  d=await load(path);assert(d.querySelectorAll('[data-source-id]').length===2,'Refresh preserves saved evidence');
+  const history=await load('/history');assert(history.querySelectorAll('[data-run-id]').length===1,'History contains one run after duplicate post');
+  assert(history.querySelector(`[href="${path}"]`),'History links back to saved output');
+  d=await load('/research/new');form=d.querySelector('form');
+  form.querySelector('[name=name]').value='Unknown Person';form.querySelector('[name=company]').value='Another Company';
+  const unknown=await fetch('/research',{method:'POST',body:new FormData(form)});
+  const unknownPath=new URL(unknown.url).pathname;
+  const missing=await wait(unknownPath);
+  assert(!missing.result.sources.length&&missing.result.hook.basis==='as_entered'&&missing.result.hook.strength==='none','Unfamiliar prospect gets no invented evidence; its email is marked not personalised');
+  await fetch('/qa/hold',{method:'POST'});
+  d=await load('/research/new');form=d.querySelector('form');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);form.querySelector('button[type=submit]').click();});
+  const activePath=frame.contentWindow.location.pathname;
+  assert(d.querySelector('[data-execution-status]').textContent==='Research in progress','Running provider operation is visible before completion');
+  assert(d.querySelectorAll('[data-timeline] [data-phase]').length===5&&d.querySelector('[data-phase-state=current]')&&d.querySelector('[data-elapsed]'),'The live run view shows five plain steps, the current one and a running clock');
+  await fetch('/qa/release',{method:'POST'});
+  await wait(activePath);
+  let updated=false;
+  for(let i=0;i<100;i++){
+    if(frame.contentDocument.querySelector('[data-business-outcome]')?.textContent==='Ready for review'){updated=true;break;}
+    await new Promise(r=>setTimeout(r,100));
+  }
+  assert(updated,'Active run polling displays the real saved completion');
+  // Review: unchecked edits cannot be approved; bad claims are blocked; approval is exact.
+  d=await load(path);
+  let approveButton=d.querySelector('[data-approve-form] button');
+  assert(approveButton&&!approveButton.disabled,'Approve draft is enabled for a checked draft');
+  assert((await fetch(path+'/export')).status===409,'Export is refused before approval');
+  const claims=[...d.querySelectorAll('.claim')];
+  assert(claims.length>=5&&claims.every(c=>c.querySelector('.claim-status')),'Each sentence shows a text claim status');
+  assert(d.querySelector('.support-id').textContent.startsWith('fixture-'),'Sentences show reviewer citations');
+  let body=d.querySelector('[name=body]');const original=body.value;
+  body.value=original.replace('That may be relevant','Because Cedar Works is clearly struggling with invoice errors, you need help. That may be relevant');
+  body.dispatchEvent(new Event('input',{bubbles:true}));
+  assert(approveButton.disabled&&d.querySelector('[data-edit-status]').textContent.includes('Check edits'),'Unchecked edits disable approval in the page');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('[data-draft-form] button[type=submit]').click();});
+  assert(d.querySelector('[data-review-label]').textContent==='Needs revision','Bad edit is saved as needing revision');
+  assert(d.querySelector('[data-approve-form] button').disabled,'Approve stays disabled while claims fail');
+  const blocked=[...d.querySelectorAll('.claim-error')].map(c=>c.textContent).join(' ');
+  assert(blocked.includes('struggling')&&blocked.includes('cause or purpose'),'The unsupported wording and reason are highlighted');
+  const hidden=d.querySelector('[data-approve-form]');
+  const forced=await fetch(path+'/draft/approve',{method:'POST',body:new FormData(hidden)});
+  assert(forced.status===409,'Server refuses approval of the blocked revision');
+  body=d.querySelector('[name=body]');body.value=original;
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('[data-draft-form] button[type=submit]').click();});
+  assert(d.querySelector('[data-review-label]').textContent==='Ready for review','Removing the wording passes the checks again');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('[data-approve-form] button').click();});
+  assert(d.querySelector('[data-review-label]').textContent==='Approved'&&d.querySelector('[data-business-outcome]').textContent==='Approved','Approve draft shows the approved state');
+  const exported=await (await fetch(path+'/export')).text();
+  const shown=d.querySelector('[data-export-copy]').textContent;
+  assert(exported.trim()===shown.trim()&&!/fixture-/.test(exported),'Copy text is the approved revision without citations');
+  d.querySelector('[data-copy-approved]').click();
+  for(let i=0;i<40&&!d.querySelector('[data-copy-status]').textContent.match(/copied|selected/);i++)await new Promise(r=>setTimeout(r,50));
+  assert(/copied|selected/.test(d.querySelector('[data-copy-status]').textContent),'Copy approved draft reports the result');
+  body=d.querySelector('[name=body]');body.value=original.replace('Best,','Thanks,');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('[data-draft-form] button[type=submit]').click();});
+  assert(d.querySelector('[data-review-label]').textContent==='Ready for review'&&(await fetch(path+'/export')).status===409,'Editing an approved draft removes the approval');
+  const historyAfter=await load('/history');
+  assert(historyAfter.querySelector(`[data-run-id="${path.split('/').pop()}"]`).textContent.includes('Ready for review'),'History shows the current review status');
+  await fetch('/qa/ambiguous/on',{method:'POST'});
+  d=await load('/research/new');form=d.querySelector('form');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);form.querySelector('button[type=submit]').click();});
+  const confirmPath=frame.contentWindow.location.pathname;
+  const waiting=await wait(confirmPath);
+  assert(waiting.business_outcome==='needs_identity_confirmation'&&!waiting.result.hook,'Same name at another employer waits for confirmation without a hook');
+  d=await load(confirmPath);audit(d,'Identity confirmation');
+  assert(d.querySelector('[data-business-outcome]').textContent==='Needs identity confirmation','Confirmation state has a text status label');
+  const cards=[...d.querySelectorAll('.identity-candidate')];
+  assert(cards.length===2&&d.querySelectorAll('.identity-candidate button[type=submit]').length===1,'Only the identity matching the supplied company can be confirmed');
+  assert(cards.some(c=>c.textContent.includes('Other Works')&&!c.querySelector('button')),'Conflicting employer is shown but not selectable');
+  assert(d.querySelector(`a[href="/research/new?from_run=${confirmPath.split('/').pop()}"]`),'Try another source is offered while identity is unresolved');
+  const confirmForm=d.querySelector('.identity-candidate form');
+  const stale=new FormData(confirmForm);stale.set('evidence_version','stale-proof');
+  const refused=await fetch(confirmPath+'/confirm-prospect',{method:'POST',body:stale});
+  const refusedText=await refused.text();
+  assert(refused.status===409&&refusedText.includes('Confirmation not accepted')&&refusedText.includes('Confirm the prospect'),'Stale confirmation is refused with a readable explanation');
+  assert((await wait(confirmPath)).business_outcome==='needs_identity_confirmation','Refused confirmation starts no work');
+  d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('.identity-candidate button[type=submit]').click();});
+  assert(frame.contentWindow.location.pathname===confirmPath,'Confirm prospect returns to the same saved run');
+  const confirmed=await wait(confirmPath);
+  assert(confirmed.business_outcome==='ready_for_review'&&confirmed.confirmation.candidate_id,'Confirmed identity continues to a checked draft');
+  assert(!confirmed.result.hook.source_ids.some(id=>id.includes('other')),'Hook uses no evidence about the other person');
+  d=await load(confirmPath);
+  assert(!d.querySelector('.identity-confirmation')&&d.querySelector('.hook-title'),'Confirmed run shows the hook instead of the confirmation card');
+  await fetch('/qa/ambiguous/off',{method:'POST'});
+  d=await load('/research/new?from_run='+confirmPath.split('/').pop());
+  assert(d.querySelector('[name=name]').value==='Maya Rao'&&d.querySelector('[name=company]').value==='Cedar Works','Try another source keeps the saved prospect details');
+  for(const [method,url] of [['GET','/accounts'],['POST','/inbox/check'],['POST','/campaigns/fake/send'],['GET','/accounts/oauth/gmail/callback']]){
+    assert((await fetch(url,{method})).status===404,method+' '+url+' is absent');
+  }
+  // Phase 4: the labelled demo scenarios run through the same pipeline and show distinct outcomes.
+  const expected={'same-name':'Needs identity confirmation','sparse':'Ready for review','republished':'Ready for review','false-inference':'Needs revision'};
+  const scenarioPaths={};
+  for(const [key,label] of Object.entries(expected)){
+    d=await load('/research/new');
+    const link=d.querySelector(`[data-scenario="${key}"]`);
+    assert(link,'Scenario '+key+' is listed on New research');
+    d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);link.click();});
+    assert(d.querySelector('[data-scenario="'+key+'"][aria-current=true]'),'Scenario '+key+' is marked as loaded');
+    d=await new Promise(resolve=>{frame.onload=()=>resolve(frame.contentDocument);d.querySelector('[data-prospect-form] button[type=submit]').click();});
+    const scenarioPath=frame.contentWindow.location.pathname;scenarioPaths[key]=scenarioPath;
+    await wait(scenarioPath);d=await load(scenarioPath);audit(d,'Scenario '+key);
+    assert(d.querySelector('[data-business-outcome]').textContent===label,'Scenario '+key+' ends as '+label);
+  }
+  d=await load(scenarioPaths['same-name']);
+  assert(d.querySelectorAll('.identity-candidate button[type=submit]').length===1&&d.body.textContent.includes('Not selectable for Northwind Supply'),'Same-name scenario offers only the matching identity');
+  d=await load(scenarioPaths['sparse']);
+  assert(d.querySelector('.source-diagnostics').textContent.includes('HTTP 403')&&d.querySelector('[data-hook-strength=weak]'),'Sparse scenario shows blocked sources and marks its role hook as weaker');
+  d=await load(scenarioPaths['republished']);
+  assert(d.querySelector('[data-hook-time]').dataset.hookTime==='Evergreen evidence'&&d.querySelector('.held-back').textContent.includes('older than the recent-event window'),'Republished scenario holds back the old event and uses evergreen evidence');
+  d=await load(scenarioPaths['false-inference']);
+  assert(d.querySelector('[data-approve-form] button').disabled&&d.querySelector('.claim-error').textContent.includes('slowing'),'False-inference scenario blocks approval and highlights the wording');
+  const cite=d.querySelector('a.support-id[href^="#source-"]');
+  cite.dispatchEvent(new Event('mouseenter'));
+  assert(d.getElementById(cite.getAttribute('href').slice(1)).classList.contains('is-cited'),'Pointing at a citation marks the cited source');
+  frame.style.width='390px';d=await load(path);
+  const top=s=>d.querySelector(s).getBoundingClientRect().top;
+  assert(top('.progress')<top('.run-status')&&top('.run-status')<top('.draft-panel')&&top('.draft-panel')<top('.hook-panel')&&top('.hook-panel')<top('.evidence-panel'),'Mobile order is progress, status, draft email, hook, sources');
+  frame.style.width='1440px';d=await load(path);
+  assert(Math.abs(top('.hook-panel')-top('.draft-panel'))<2&&d.querySelector('.evidence-panel').getBoundingClientRect().left>d.querySelector('.draft-panel').getBoundingClientRect().right&&top('.evidence-panel')>top('.hook-panel'),'Desktop places the hook and sources beside the draft email');
+  // Dashboard: overview counts, hook strength mix and each run's output.
+  d=await load('/history');
+  assert(d.querySelector('[data-dashboard]')&&d.querySelector('.strength-bar')&&d.querySelector('.history-output'),'History shows an overview, hook strengths and outputs');
+  d=await load(path);
+  assert(d.querySelectorAll('[data-run-summary] [data-phase-state=done]').length===5,'A finished run summarises all five steps as done');
+  // Results views: the email with every claim marked and numbered, or ranked findings.
+  d=await load(path);
+  const marks=[...d.querySelectorAll('[data-annotated] [data-mark]')];
+  assert(marks.length>=3&&marks.some(m=>m.dataset.mark==='core')&&marks.some(m=>m.dataset.mark==='goal')&&marks.some(m=>m.dataset.mark==='optional'),'The email marks each sentence by relevance: reason for writing, offer, optional');
+  assert(d.querySelector('[data-optional] button'),'Optional sentences can be removed in one click');
+  const refs=[...d.querySelectorAll('[data-annotated] a.ref')].filter(a=>a.getAttribute('href').startsWith('#ref-'));
+  assert(refs.length&&refs.every(a=>d.getElementById(a.getAttribute('href').slice(1))),'Every source number in the email points at a listed source');
+  assert(d.querySelector('.letter-legend').textContent.includes('Optional, easy to cut'),'The email explains what each colour means');
+  const startWith=async extra=>{
+    const form=(await load('/research/new')).querySelector('[data-prospect-form]');
+    const data=new URLSearchParams(new FormData(form));data.delete('purpose');
+    for(const [k,v] of Object.entries(extra))data.set(k,v);
+    const response=await fetch('/research',{method:'POST',body:data});
+    const runPath=new URL(response.url).pathname;await wait(runPath);return runPath;
+  };
+  const onlyPath=await startWith({purpose:'goal'});
+  d=await load(onlyPath);audit(d,'Research-only run');
+  assert(d.querySelector('[data-findings]')&&!d.querySelector('[data-annotated]')&&d.querySelector('[data-write-draft] button'),'Research only shows ranked findings and offers to draft later');
+  const plainPath=await startWith({purpose:'none'});
+  d=await load(plainPath);audit(d,'No-goal run');
+  assert(d.querySelector('[data-findings]')&&!d.querySelector('[data-write-draft]')&&d.body.textContent.includes('without a goal'),'No goal shows findings only and never offers drafting');
+  for(const width of [320,390,1440]){
+    frame.style.width=width+'px';
+    for(const url of ['/research/new','/research/new?scenario=false-inference',path,unknownPath,confirmPath,onlyPath,plainPath,'/goal','/batch/new',...Object.values(scenarioPaths),'/history'])audit(await load(url),url+' at '+width+'px');
+  }
+  d=await load('/research/new');const skip=d.querySelector('.skip-link');skip.focus();
+  assert(d.activeElement===skip&&skip.getBoundingClientRect().top>=0,'Skip link is visible on keyboard focus');
+  result.textContent='PASS\n'+checks.length+' Workbench browser checks\n'+checks.join('\n');
+})().catch(error=>document.querySelector('pre').textContent='FAIL\n'+error.stack);
+</script></html>

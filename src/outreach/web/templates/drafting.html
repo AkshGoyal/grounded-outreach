@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block head %}{% if job and not job.finished %}{% if feedback_enabled %}<noscript><meta http-equiv="refresh" content="3"></noscript>{% else %}<meta http-equiv="refresh" content="3">{% endif %}{% endif %}{% endblock %}{% block body %}
+<h1>Writing campaign emails</h1>{% if job %}
+<p>
+<a href="/campaigns/{{ job.campaign_id }}">{{ job.campaign_id }}</a>
+</p>
+<div class="stats">
+<div>
+<small>Saved drafts</small>
+<strong><span data-job-count="completed">{{ job.completed }}</span> / <span data-job-count="total">{{ job.total }}</span></strong>
+</div>
+<div>
+<small>Failed requests</small>
+<strong data-job-count="failed">{{ job.failed }}</strong>
+</div>
+</div>{% if job.error %}
+<p class="warning">{{ job.error }}</p>{% endif %}{% if job.finished %}
+<p class="notice">{{ 'Stopped.' if job.stopped else 'Drafting finished.' }} Saved emails are ready for review.</p>
+<a class="button" href="/campaigns/{{ job.campaign_id }}/drafts">Review drafts →</a>{% else %}
+<section class="notice" data-job-progress="drafting"><p data-job-detail role="status">Writing drafts. Saved emails are ready as each one finishes.</p><a class="button secondary" data-job-open href="/campaigns/{{ job.campaign_id }}/drafts" hidden>Review saved drafts →</a></section><p>Drafts save as each email finishes. Approval is the next step.</p>
+<form method="post" data-job-control action="/drafting/stop">
+<button class="secondary">Stop after this draft</button>
+</form>{% endif %}{% else %}
+<p>No drafting job is running.</p>{% endif %}{% endblock %}

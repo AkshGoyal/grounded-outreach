@@ -1,0 +1,39 @@
+      <section class="goal-block" aria-labelledby="goal-heading" data-goal>
+        <div class="goal-head">
+          <h2 id="goal-heading">Your goal</h2>
+          {% if goal_is_default %}<span class="chip">{{ 'Demo goal, fictional' if campaign.get('fixture') else 'Default' }}</span>{% endif %}
+        </div>
+        <dl class="goal-summary">
+          <div><dt>You offer</dt><dd>{{ goal.offer }}</dd></div>
+          <div><dt>To</dt><dd>{{ goal.intended_role }}</dd></div>
+          <div><dt>Good reasons to reach out</dt><dd>{{ goal.looking_for or 'Recent, dated news about the person or company that connects to what you offer.' }}</dd></div>
+        </dl>
+        {% if goal_editable %}
+        <details class="goal-edit" {% if goal_open %}open{% endif %}>
+          <summary>Edit goal</summary>
+          <p class="hint">Everything you list under “What it does” and “Results you can prove” is treated as true, so the email may say it. Keep it to what you can stand behind.</p>
+          <div class="field-pair">
+            <div class="field"><label for="goal-sender-name">Your name</label><input id="goal-sender-name" name="sender_name" value="{{ goal.sender_name }}" maxlength="80" autocomplete="name"></div>
+            <div class="field"><label for="goal-sender-company">Your company</label><input id="goal-sender-company" name="sender_company" value="{{ goal.sender_company }}" maxlength="80" autocomplete="organization"></div>
+          </div>
+          <div class="field"><label for="goal-offer">What you offer</label><input id="goal-offer" name="offer" value="{{ goal.offer }}" maxlength="160" aria-describedby="goal-offer-help"><p class="hint" id="goal-offer-help">One sentence.</p></div>
+          <div class="field"><label for="goal-role">Who it is for</label><input id="goal-role" name="intended_role" value="{{ goal.intended_role }}" maxlength="120" aria-describedby="goal-role-help"><p class="hint" id="goal-role-help">The kind of person this email is meant for.</p></div>
+          <div class="field"><label for="goal-capabilities">What it does</label><textarea id="goal-capabilities" name="capabilities" rows="3" aria-describedby="goal-cap-help">{{ goal.capabilities }}</textarea><p class="hint" id="goal-cap-help">One per line, up to 4. The email may only describe your offer with these.</p></div>
+          <div class="field"><label for="goal-proof">Results you can prove <span class="optional">optional</span></label><textarea id="goal-proof" name="proof_points" rows="2" aria-describedby="goal-proof-help">{{ goal.proof_points }}</textarea><p class="hint" id="goal-proof-help">One per line, up to 3. Leave empty if you have none; nothing will be claimed.</p></div>
+          <div class="field"><label for="goal-looking">Good reasons to reach out <span class="optional">optional</span></label><input id="goal-looking" name="looking_for" value="{{ goal.looking_for }}" maxlength="200" placeholder="e.g. new finance leader, ERP change, acquisition, fast hiring in AP" aria-describedby="goal-looking-help"><p class="hint" id="goal-looking-help">What kind of public news would make your offer timely. Research looks for this first.</p></div>
+          <div class="field"><label for="goal-cta">Closing question</label><input id="goal-cta" name="cta" value="{{ goal.cta }}" maxlength="160" aria-describedby="goal-cta-help"><p class="hint" id="goal-cta-help">The one question the email ends with.</p></div>
+          {% if not goal_is_default %}<p class="hint"><a href="?goal=default">Reset to the default goal</a></p>{% endif %}
+        </details>
+        {% else %}
+        <details class="goal-edit">
+          <summary>See the full goal</summary>
+          <p>{{ campaign.offer }} From {{ campaign.sender }}.</p>
+          <p class="mini-heading">What the email may claim</p>
+          <ul class="plain-list">{% for capability in campaign.supported_capabilities %}<li>{{ capability }}</li>{% endfor %}</ul>
+          {% if campaign.proof_points %}<ul class="plain-list">{% for point in campaign.proof_points %}<li>{{ point }}</li>{% endfor %}</ul>{% else %}<p class="hint">No customer results are claimed.</p>{% endif %}
+          <p class="mini-heading">How it ends</p>
+          <p>“{{ campaign.cta }}”</p>
+          <p class="hint">The examples were written for this fictional goal, so it is fixed here. In live mode you can edit it.</p>
+        </details>
+        {% endif %}
+      </section>

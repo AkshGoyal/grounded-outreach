@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ metadata.name }} · Outreach{% endblock %}
+{% block body %}{% include '_campaign_header.html' %}
+{% if tab=='overview' %}
+{% if metadata.status in ['paused','completed','archived'] %}<div class="warning">This campaign is {{ metadata.status }}. Existing messages and replies remain available. <a href="/campaigns/{{ campaign_id }}/settings">Reopen or resume in Settings</a> before sending more.</div>{% endif %}
+<div class="stats"><div><small>Audience</small><strong>{{ contacts|length }}</strong></div><div><small>Sent</small><strong>{{ sent_count }}</strong></div><div><small>Replies</small><strong>{{ reply_count }}</strong></div></div>
+
+{% if metadata.status not in ['paused','completed','archived'] %}<section class="panel next-action"><p class="eyebrow">YOUR NEXT STEP</p>
+{% if not contacts %}<h2>Choose who you’ll contact</h2><p>Choose found emails from an audience and add them to this campaign.</p><a class="button" href="/campaigns/{{ campaign_id }}?tab=audience">Add contacts →</a>
+{% elif not has_copy %}<h2>What would you like to say?</h2><p>Tell us your introduction and the response you want.</p><a class="button" href="/campaigns/{{ campaign_id }}/message">Write your message brief →</a>
+{% elif undrafted or draft_counts.review %}<h2>Prepare and review your emails</h2><p>You review every draft before any sending can start.</p><a class="button" href="/campaigns/{{ campaign_id }}/drafts">Open drafts →</a>
+{% elif not sender_ready %}<h2>Choose your sending account</h2><p>Your audience and message are ready. Connect and verify the sender next.</p><a class="button" href="/campaigns/{{ campaign_id }}/settings">Choose sender →</a>
+{% elif draft_counts.approved %}<h2>Review the launch</h2><p>Check the approved emails and sending pace before you begin.</p><a class="button" href="/campaigns/{{ campaign_id }}/send">Review launch →</a>
+{% else %}<h2>Keep the conversation going</h2><a class="button" href="/inbox?campaign_id={{ campaign_id }}&show=all">Read replies →</a>{% endif %}</section>{% endif %}
+<details class="panel"><summary>All campaign steps</summary><div class="section-heading"><h2>Prepare your campaign</h2><a href="/campaigns/{{ campaign_id }}/settings">Settings</a></div>
+<ol class="campaign-checklist">
+<li><span class="badge {{ 'ok' if contacts else '' }}">{{ 'Added' if contacts else 'Needed' }}</span><div><strong>Audience</strong><p>{{ contacts|length }} contacts in this campaign. Add more from your saved audiences.</p></div><a href="/campaigns/{{ campaign_id }}?tab=audience">{{ 'Manage' if contacts else 'Add audience' }} →</a></li>
+<li><span class="badge {{ 'ok' if has_copy else '' }}">{{ 'Saved' if has_copy else 'Needed' }}</span><div><strong>Message brief</strong><p>Your introduction, background and desired response.</p></div><a href="/campaigns/{{ campaign_id }}/message">{{ 'Edit' if has_copy else 'Write brief' }} →</a></li>
+<li><span class="badge {{ 'ok' if sender_ready else '' }}">{{ 'Verified' if sender_ready else 'Needed' }}</span><div><strong>Sending account</strong><p>{{ metadata.sender_email or 'Choose Gmail or Zoho when you are ready. Drafting works first.' }}</p></div><a href="/campaigns/{{ campaign_id }}/settings">Choose sender →</a></li>
+<li><span class="badge">{{ draft_counts.approved }} approved</span><div><strong>Draft review</strong><p>{{ undrafted }} still to draft · {{ draft_counts.review }} waiting for review. Nothing sent automatically.</p></div><a href="/campaigns/{{ campaign_id }}/drafts">Open drafts →</a></li>
+<li><span class="badge">Review required</span><div><strong>Launch</strong><p>Check the exact sender, approved emails and sending pace.</p></div><a href="/campaigns/{{ campaign_id }}/send">Review launch →</a></li>
+</ol></details>
+<div class="actions"><a class="button" href="{{ "/campaigns/"~campaign_id~"/research" if feedback_enabled else "/research/new" }}">Find more contacts</a><a href="/inbox?campaign_id={{ campaign_id }}&show=all">Open campaign replies →</a><a href="/campaigns/{{ campaign_id }}?tab=audience">Add more contacts →</a></div>
+{% else %}
+<div class="section-heading"><div><h2>Campaign contacts</h2><p class="muted">{{ contacts|length }} contacts. Adding more preserves existing messages and replies.</p></div></div>
+{% if available_audiences is defined %}{% include "_campaign_contacts_picker.html" %}{% else %}<a class="button" href="/campaigns/{{ campaign_id }}/audience">Add contacts from an audience →</a>{% endif %}
+<details class="panel compact"><summary>Other ways to add contacts</summary><section><p>Open the full audience picker.</p><a class="button" href="{{ "/campaigns/"~campaign_id~"/audience" if audience_handoff_enabled else "#app-update" }}">Add a saved audience →</a></section>
+<form class="panel compact" method="post" action="/campaigns/{{ campaign_id }}/enroll-list"><label>Use an older saved contact list<select name="list_id" required><option value="">Choose a saved group</option>{% for l in lists %}<option value="{{ l.id }}">{{ l.name }} · {{ l.lead_count }} leads</option>{% endfor %}</select></label><label class="check"><input type="checkbox" name="acknowledge_prior">I reviewed prior outreach and approve reusing contacts from other campaigns.</label><button>Add to this campaign</button><p class="muted">Existing members are skipped. Do-not-contact addresses stay blocked.</p></form>
+</details>
+<div class="actions"><a class="button" href="{{ "/campaigns/"~campaign_id~"/research" if feedback_enabled else "/research/new" }}">Find more contacts</a><a href="/import?campaign_id={{ campaign_id }}">Import a spreadsheet</a></div>
+<div class="audience-table table-wrap"><table><thead><tr><th>Company</th><th>Email</th><th>Source details</th></tr></thead><tbody>{% for c in contacts %}<tr><td data-label="Company">{{ c.company or '—' }}{% if origins.get(c.id) %}<small class="block"><a href="/leads/{{ origins[c.id] }}">Research evidence →</a></small>{% endif %}</td><td data-label="Email">{{ c.email }}{% if c.suppressed %}<span class="badge danger">do not contact</span>{% endif %}</td><td data-label="Evidence">{% for k,v in c.evidence.items() if k not in ['research_run','review_note','research_sources'] %}<div class="fact"><span class="key">{{ k }}</span> {{ v }}</div>{% else %}<span class="muted">No facts recorded</span>{% endfor %}</td></tr>{% else %}<tr><td colspan="3">No contacts yet. Select emails from an audience above, or find new emails.</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endblock %}

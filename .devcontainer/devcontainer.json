@@ -1,0 +1,35 @@
+{
+  "name": "Outreach Agent",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // The local web interface. Codespaces gives it a private URL that only you
+  // can open — it is not public, and it is not on the internet for anyone else.
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "Outreach",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff"],
+      "settings": {
+        "python.defaultInterpreterPath": ".venv/bin/python"
+      }
+    }
+  },
+
+  // Settings you add under Codespaces secrets appear here automatically, so
+  // your API key never goes in a file and never reaches the repository.
+  "remoteEnv": {
+    "PATH": "${containerWorkspaceFolder}/.venv/bin:${containerEnv:PATH}"
+  }
+}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ metadata.name }} · Message{% endblock %}
+{% block body %}{% include '_campaign_header.html' %}
+<h2>What should your emails say?</h2>
+<p class="intro">Describe everything in one editor. Mark any required wording to keep exactly where it belongs.</p>
+<div class="actions"><a class="button secondary" href="{{ "/campaigns/"~campaign_id~"/attachments" if audience_handoff_enabled else "#app-update" }}">Add attachments{% if audience_handoff_enabled %} · {{ attachments|length }} files{% else %} · restart required{% endif %}</a></div>
+{% if legacy_copy %}<div class="notice">This campaign’s existing copy is preserved below. Saving the editor updates this campaign only; sent history stays unchanged.</div>{% endif %}
+<form class="panel" method="post" action="/campaigns/{{ campaign_id }}/message" data-save-draft data-server-values="true">
+{% if form_error %}<div class="warning" role="alert">{{ form_error }}</div>{% endif %}
+{% include '_message_fields.html' %}
+<div class="actions"><button>Save email instructions</button><a class="button secondary" href="/campaigns/{{ campaign_id }}/drafts">Continue to drafts →</a><span data-draft-status class="muted" role="status"></span></div>
+<p class="muted">Saving uses no AI calls. New drafts and changes require your approval before launch.</p>
+</form>
+{% include '_attachments.html' %}
+{% endblock %}

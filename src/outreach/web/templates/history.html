@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Message history · {{ metadata.name }}{% endblock %}
+{% block body %}
+{% include '_campaign_header.html' %}
+<h2>Message history</h2>
+<p class="note">Saved across restarts. Provider acceptance does not prove inbox delivery. An uncertain attempt stays blocked from automatic resend.</p>
+<div class="counts"><div class="count"><strong>{{ totals.sent }}</strong> accepted by provider</div><div class="count"><strong>{{ totals.pending }}</strong> uncertain</div><div class="count"><strong>{{ totals.failed }}</strong> failed</div></div>
+<form method="get" class="panel compact"><label>Show<select name="status"><option value="">All attempts</option>{% for key,label in [('sent','Accepted by provider'),('pending','Uncertain'),('failed','Failed')] %}<option value="{{ key }}" {{ 'selected' if status==key }}>{{ label }}</option>{% endfor %}</select></label><button class="secondary">Filter history</button></form>
+{% if totals.pending %}<div class="warning"><strong>Check uncertain attempts before retrying.</strong> Open this account’s Sent folder and compare recipient, subject, time and message ID. Keep the attempt blocked until its outcome is confirmed. This screen never retries a message.</div>{% endif %}
+{% for entry in entries %}<details class="panel compact"><summary>{{ entry.company or entry.recipient_email }} · {{ 'Uncertain — check Sent folder' if entry.status=='pending' else 'Accepted by provider' if entry.status=='sent' else 'Failed' }} · {{ 'Reply answer' if entry.reply_id else 'Outgoing email' }}</summary>
+<p class="muted">{{ entry.created_at }} · To {{ entry.recipient_email }}</p>
+<pre class="email">Subject: {{ entry.subject }}
+
+{{ entry.body_text }}</pre>
+{% for file in entry.attachments %}<p>Attachment: <a href="/campaigns/{{ campaign_id }}/attachments/{{ file.id }}/download">{{ file.filename }}</a> · {{ (file.size/1024)|round(1) }} KB</p>{% endfor %}
+<p class="muted">Message ID: <code>{{ entry.message_id }}</code>{% if entry.reply_id %} · <a href="/replies/{{ entry.reply_id }}">Open conversation →</a>{% endif %}</p></details>
+{% else %}<p class="empty">{{ 'No attempts match this filter.' if status else 'No messages have been attempted yet. Approve drafts, then review launch.' }}</p>{% endfor %}
+{% endblock %}

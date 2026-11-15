@@ -1,0 +1,73 @@
+{% extends 'workbench/base.html' %}
+{% block title %}New prospect | Outreach Workbench{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>New prospect</h1>
+    <p class="lede">Choose what you want, then who it is for. Every detail it finds is sourced, and you approve the email before it goes anywhere.</p>
+  </div>
+</div>
+{% set many = false %}{% include 'workbench/_mode_tabs.html' %}
+
+<div class="start-grid{% if scenarios %} has-examples{% endif %}">
+  <section class="card form-card" aria-labelledby="prospect-heading">
+    {% if errors %}
+    <div class="notice notice-error" role="alert" tabindex="-1" data-form-errors>
+      <h3>Check these details</h3>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      <p>Your entries are kept below.</p>
+    </div>
+    {% endif %}
+    <form method="post" action="/research" class="prospect-form" data-prospect-form>
+      <input type="hidden" name="request_id" value="{{ request_id }}">
+      {% include 'workbench/_options.html' %}
+      <section class="start-step" aria-labelledby="prospect-heading">
+      <h2 id="prospect-heading" class="step-title">Who?</h2>
+      <div class="field">
+        <label for="prospect-name">Full name</label>
+        <input id="prospect-name" name="name" value="{{ values.get('name', '') }}" required minlength="2" maxlength="120" autocomplete="name" placeholder="e.g. Maya Rao">
+      </div>
+      <div class="field">
+        <label for="prospect-company">Company name or website</label>
+        <input id="prospect-company" name="company" value="{{ values.get('company', '') }}" required minlength="2" maxlength="200" autocomplete="organization" placeholder="e.g. Cedar Works">
+      </div>
+      <div class="field">
+        <label for="prospect-role">Job title <span class="optional">optional</span></label>
+        <input id="prospect-role" name="role" value="{{ values.get('role', '') }}" maxlength="120" autocomplete="organization-title" aria-describedby="role-help" placeholder="e.g. Finance Director">
+        <p class="hint" id="role-help">Helps tell people with the same name apart and judge what is relevant.</p>
+      </div>
+      <details class="more-fields" {% if values.get('website') or values.get('profile_url') %}open{% endif %}>
+        <summary>Add a link to help the research <span class="optional">optional</span></summary>
+        <div class="field">
+          <label for="prospect-website">Company website</label>
+          <input id="prospect-website" name="website" type="url" value="{{ values.get('website', '') }}" maxlength="2000" placeholder="https://company.example" autocomplete="url">
+        </div>
+        <div class="field">
+          <label for="prospect-profile">A public page that names them</label>
+          <input id="prospect-profile" name="profile_url" type="url" value="{{ values.get('profile_url', '') }}" maxlength="2000" placeholder="https://…" aria-describedby="profile-help">
+          <p class="hint" id="profile-help">A team page, press release or interview. It is read first, which helps confirm the right person. LinkedIn pages can't be read.</p>
+        </div>
+      </details>
+      </section>
+      {% set many = false %}{% include 'workbench/_start.html' %}
+    </form>
+  </section>
+
+  {% if scenarios %}
+  <aside class="examples" aria-labelledby="examples-heading">
+    <h2 id="examples-heading">Or try an example</h2>
+    <p class="hint">Fictional prospects. Each one shows how the workbench handles a situation that often goes wrong. Pick one to fill the form.</p>
+    <ol class="example-list">
+      {% for scenario in scenarios %}
+      <li><a class="example" href="/research/new?scenario={{ scenario.key }}" {% if scenario.key == chosen_scenario %}aria-current="true"{% endif %} data-scenario="{{ scenario.key }}">
+        <span class="example-top"><span class="example-tag">{{ scenario.label }}</span>{% if scenario.key == chosen_scenario %}<span class="example-loaded">Loaded in the form</span>{% endif %}</span>
+        <span class="example-person">{{ scenario.prospect.name }}, {{ scenario.prospect.company }}</span>
+        <span class="example-expect">{{ scenario.expect }}</span>
+      </a></li>
+      {% endfor %}
+    </ol>
+    <p class="hint">Any other name gets an email marked “Not personalised”, because examples never invent facts about a real person.</p>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}Attachments · {{ metadata.name }}{% endblock %}
+{% block body %}{% include '_campaign_header.html' %}
+<h2>Email attachments</h2><p class="intro">Add your brochure, CV, portfolio or other files. Every initial email in this campaign will include these files. Changing files returns unsent approved drafts to review.</p>
+<form class="panel" method="post" enctype="multipart/form-data" data-busy-label="Uploading files…">
+<label>Choose attachments<input type="file" name="files" multiple required accept=".pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg" {% if busy %}disabled{% endif %}></label>
+<p class="muted">Up to 5 files, 10 MB combined. PDF, Word, Excel, PowerPoint, text, CSV, PNG and JPG.</p>
+<button {% if busy %}disabled{% endif %}>Upload attachments</button>
+{% if busy %}<p class="warning">Wait for sending or drafting to finish before changing files.</p>{% endif %}
+</form>
+{% for file in attachments %}<div class="panel compact"><strong>{{ file.filename }}</strong> · {{ (file.size/1024)|round(1) }} KB
+<div class="actions"><a href="/campaigns/{{ campaign_id }}/attachments/{{ file.id }}/download">Download to check</a>
+<form method="post" action="/campaigns/{{ campaign_id }}/attachments/{{ file.id }}/remove"><button class="danger" {% if busy %}disabled{% endif %}>Remove attachment</button></form></div></div>
+{% else %}<p class="empty">No files yet. Choose files above, then upload them.</p>{% endfor %}
+<div class="actions"><a class="button" href="/campaigns/{{ campaign_id }}/message">Back to message</a><a class="button secondary" href="/campaigns/{{ campaign_id }}/drafts">Review drafts →</a></div>
+{% endblock %}

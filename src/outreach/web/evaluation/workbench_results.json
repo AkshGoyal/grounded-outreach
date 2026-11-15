@@ -1,0 +1,806 @@
+{
+ "goals": [
+  {
+   "id": "finance",
+   "label": "Invoice review for finance leaders",
+   "goal": {
+    "sender_name": "Alex Morgan",
+    "sender_company": "ClearLedger Demo",
+    "offer": "Invoice review and exception routing for finance teams",
+    "intended_role": "Finance leaders responsible for invoice operations",
+    "capabilities": "Review invoice information against supplied purchase-order records.\nShow exceptions and route them for human resolution.",
+    "proof_points": "Finance teams often find invoice exceptions late, at month-end close.",
+    "looking_for": "",
+    "cta": "Would a short walkthrough of invoice exception review be useful?"
+   }
+  },
+  {
+   "id": "people",
+   "label": "New-hire onboarding for HR leaders",
+   "goal": {
+    "sender_name": "Sam Carter",
+    "sender_company": "Brightdesk Demo",
+    "offer": "New-hire onboarding plans that HR teams can track step by step",
+    "intended_role": "HR leaders responsible for onboarding and employee experience",
+    "capabilities": "Send each new hire a personal checklist of paperwork, equipment and training before their first day.\nShow HR which onboarding steps are stuck and who they are waiting on.",
+    "proof_points": "HR teams often learn that a new hire's paperwork or laptop is missing on the first morning.",
+    "looking_for": "",
+    "cta": "Would a short look at a sample onboarding plan be useful?"
+   }
+  },
+  {
+   "id": "it",
+   "label": "Access reviews for IT leaders",
+   "goal": {
+    "sender_name": "Jordan Lee",
+    "sender_company": "Keyline Demo",
+    "offer": "Access reviews for IT and security teams",
+    "intended_role": "IT leaders responsible for systems access and audits",
+    "capabilities": "List who has access to each system and when they last used it.\nSend each manager a short review to keep or remove their team's access.",
+    "proof_points": "IT teams often run access reviews by spreadsheet once a year, just before an audit.",
+    "looking_for": "",
+    "cta": "Would a short demo of an access review be useful?"
+   }
+  }
+ ],
+ "manual_minutes_per_prospect": 20,
+ "records": [
+  {
+   "goal": "finance",
+   "name": "Eric Stober",
+   "company": "Innventure",
+   "role": "Chief Financial Officer",
+   "why_chosen": "Recent appointment at a small listed company",
+   "run_id": "c489ab74fa4c46c8",
+   "ran_at": "2026-11-12T19:34:36.669532+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "Innventure, Inc. (NASDAQ: INV) (“Innventure” or the “Company”) today announced that Eric Stober has joined the Company as Chief Financial Officer, with finance, accounting, investor relations, and communications reporting to him.",
+    "event_date": "2026-10-19",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Innventure Welcomes Eric Stober as Chief Financial Officer | Innventure, Inc. (NASDAQ: INV)",
+    "source_url": "https://www.innventure.com/investor-news/innventure-welcomes-eric-stober-as-chief-financial-officer"
+   },
+   "facts": {
+    "usable": 4,
+    "set_aside": 4,
+    "angles": [
+     "company",
+     "growth",
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 29,
+    "seen": 30
+   },
+   "email": {
+    "subject": "Invoice exception review for Innventure finance",
+    "body": "Hi Eric,\n\nCongratulations on the CFO role. With finance and accounting now sitting together under you, how invoices get checked could be one of the first routines you look at.\n\nClearLedger reviews invoice information against the purchase-order records you supply, then shows the exceptions and routes each one to a person to resolve. Finance teams often find invoice exceptions late, at month-end close, and this brings them into view sooner.\n\nWould a short walkthrough of invoice exception review be useful?\n\nBest,\nAlex Morgan, ClearLedger Demo",
+    "words": 85,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20436,
+   "seconds": 25,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "finance",
+   "name": "John Vandemore",
+   "company": "Levi Strauss & Co.",
+   "role": "Chief Financial Officer",
+   "why_chosen": "Recent appointment; predecessor in the same news",
+   "run_id": "17fc84b1d64a4b10",
+   "ran_at": "2026-11-12T19:46:25.980408+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "today announced the appointment of John Vandemore as Executive Vice President and Chief Financial Officer, effective November 1, 2026",
+    "event_date": "2026-09-30",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "levistrauss.com PDF document",
+    "source_url": "https://www.levistrauss.com/wp-content/uploads/2026/09/Levis_9_30_Press_Release.pdf"
+   },
+   "facts": {
+    "usable": 3,
+    "set_aside": 2,
+    "angles": [
+     "company",
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 31,
+    "seen": 31
+   },
+   "email": {
+    "subject": "Invoice exception review for Levi Strauss finance",
+    "body": "Hi John,\n\nCongratulations on the CFO appointment at Levi Strauss. With finance now coming under your leadership, how invoices get checked could be one of the first things you look at.\n\nClearLedger reviews invoice information against the purchase-order records you supply, then shows the exceptions and routes each one to a person to resolve. Finance teams often find invoice exceptions late, at month-end close, and this puts them in front of someone sooner.\n\nWould a short walkthrough of invoice exception review be useful?\n\nBest,\nAlex Morgan, ClearLedger Demo",
+    "words": 88,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20407,
+   "seconds": 27,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "finance",
+   "name": "Mark Long",
+   "company": "Supermicro",
+   "role": "Chief Financial Officer",
+   "why_chosen": "Common name; heavily covered company",
+   "run_id": "d0fee985b73143bf",
+   "ran_at": "2026-11-12T19:46:53.166427+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "today announced the appointment of Mark Long as Senior Vice President and Chief Financial Officer reporting directly to the Chief Executive Officer (CEO) Charles Liang, effective immediately.",
+    "event_date": "2026-10-15",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Press Releases | Supermicro",
+    "source_url": "https://www.supermicro.com/en/newsroom/pressreleases?mlg=3&page=0"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 4,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 31,
+    "seen": 32
+   },
+   "email": {
+    "subject": "Invoice exception review for Supermicro finance",
+    "body": "Hi Mark,\n\nCongratulations on the CFO role at Supermicro. With finance now reporting up through you, how invoices get checked could be one of the things you look at early.\n\nClearLedger compares each invoice against its purchase-order records, then shows the exceptions and routes them to a person to resolve. Finance teams often find invoice exceptions late, at month-end close, and this brings them into view sooner.\n\nWould a short walkthrough of invoice exception review be useful?\n\nBest,\nAlex Morgan, ClearLedger Demo",
+    "words": 82,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 19487,
+   "seconds": 26,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "finance",
+   "name": "Matthew Latino",
+   "company": "FuelCell Energy",
+   "role": "Chief Financial Officer",
+   "why_chosen": "Recent appointment; predecessor stays as adviser",
+   "run_id": "e674cbbf18594b07",
+   "ran_at": "2026-11-12T19:47:26.784797+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "On October 4, 2026, the Board of Directors (the “Board”) of the Company appointed Matthew Latino to serve as the Company’s Executive Vice President, Chief Financial Officer and Treasurer effective as of October 7, 2026.",
+    "event_date": "2026-10-07",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "FUELCELL ENERGY INC 8-K filed October 7, 2026",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/886128/000110465926114207/tm2627140d2_8k.htm"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 4,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 29,
+    "seen": 31
+   },
+   "email": {
+    "subject": "Invoice exception review for FuelCell's finance team",
+    "body": "Hi Matthew,\n\nCongratulations on the CFO role at FuelCell Energy. With finance now in your hands, how invoices get checked could be one of the first processes you look at.\n\nClearLedger reviews invoice information against the purchase-order records you supply, then shows the exceptions and routes them to a person to resolve. Finance teams often find invoice exceptions late, at month-end close, and this puts them in front of someone sooner.\n\nWould a short walkthrough of invoice exception review be useful?\n\nBest,\nAlex Morgan, ClearLedger Demo",
+    "words": 86,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 18654,
+   "seconds": 27,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "finance",
+   "name": "Bobby Crain",
+   "company": "CK Supply",
+   "role": "Chief Financial Officer",
+   "why_chosen": "Small private company, little press",
+   "run_id": "31e4159108f24c3f",
+   "ran_at": "2026-11-12T19:47:53.961585+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "CK Supply announces the appointment of Bobby Crain as Chief Financial Officer, strengthening its leadership team and supporting continued growth across the Midwest.",
+    "event_date": "2026-10-16",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Gas, Welding, and Dry Ice Products and Services | CK Supply",
+    "source_url": "https://cksupply.com/"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 5,
+    "angles": [
+     "growth"
+    ]
+   },
+   "sources": {
+    "usable": 25,
+    "seen": 28
+   },
+   "email": {
+    "subject": "Invoice exception review for CK Supply finance",
+    "body": "Hi Bobby,\n\nCongratulations on the CFO role at CK Supply. With the company growing across the Midwest, how invoices get checked could be one of the things finance looks at early.\n\nOur tool checks invoice information against your purchase-order records, then shows the exceptions and routes them to a person to resolve. Finance teams often find invoice exceptions late, at month-end close, and this brings them up sooner.\n\nWould a short walkthrough of invoice exception review be useful?\n\nBest,\nAlex Morgan, ClearLedger Demo",
+    "words": 83,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 19558,
+   "seconds": 27,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "people",
+   "name": "Christina Schelling",
+   "company": "Verizon",
+   "role": "Chief People Officer",
+   "why_chosen": "Recent appointment at a very large company",
+   "run_id": "57da43d08e174477",
+   "ran_at": "2026-11-12T19:56:20.426702+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "Verizon names Christina Schelling as Executive Vice President, Chief People Officer",
+    "event_date": "2026-10-27",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Verizon names Christina Schelling as Chief People Officer",
+    "source_url": "https://www.verizon.com/about/news/verizon-names-christina-schelling-as-executive-vice-president-chief-people-officer"
+   },
+   "facts": {
+    "usable": 4,
+    "set_aside": 4,
+    "angles": [
+     "company",
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 29,
+    "seen": 30
+   },
+   "email": {
+    "subject": "Onboarding plans for Verizon's HR team",
+    "body": "Hi Christina,\n\nCongratulations on the Chief People Officer role at Verizon. With a workforce as large as yours, how new hires get started could be one of the first places you look.\n\nBrightdesk sends each new hire a personal checklist of paperwork, equipment and training before their first day, and shows HR which steps are stuck and who they are waiting on. HR teams often learn that a new hire's paperwork or laptop is missing on the first morning; this puts that in view beforehand.\n\nWould a short look at a sample onboarding plan be useful?\n\nBest,\nSam Carter, Brightdesk Demo",
+    "words": 101,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20447,
+   "seconds": 23,
+   "held_requests": 0,
+   "problems": [],
+   "rerun_of": "6360dd6c14064ab6"
+  },
+  {
+   "goal": "people",
+   "name": "Nai De Leon",
+   "company": "Yum! Brands",
+   "role": "Chief People and Culture Officer",
+   "why_chosen": "Recent internal promotion",
+   "run_id": "9298070585584aae",
+   "ran_at": "2026-11-12T19:56:44.588875+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "Nai De Leon has been appointed Chief People & Culture Officer, effective November 1, 2026.",
+    "event_date": "2026-07-21",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Yum! Brands Appoints Nai De Leon as Chief People & Culture Officer",
+    "source_url": "https://www.yum.com/wps/portal/yumbrands/Yumbrands/news/press-releases/yum%2Bbrands%2Bappoints%2Bnai%2Bde%2Bleon%2Bas%2Bchief%2Bpeople%2Bculture%2Bofficer"
+   },
+   "facts": {
+    "usable": 3,
+    "set_aside": 4,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 31,
+    "seen": 32
+   },
+   "email": {
+    "subject": "Onboarding plans for Yum!'s people team",
+    "body": "Hi Nai,\n\nCongratulations on the new Chief People & Culture role at Yum!. Onboarding is one of the first places a people leader's work reaches every new hire, which is why I'm writing.\n\nBrightdesk sends each new hire a personal checklist of paperwork, equipment and training before their first day. HR can then see which steps are stuck and who they are waiting on. In my experience, HR teams often learn that a new hire's paperwork or laptop is missing on the first morning.\n\nWould a short look at a sample onboarding plan be useful?\n\nBest,\nSam Carter, Brightdesk Demo",
+    "words": 99,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 5,
+    "backed": 5,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 23681,
+   "seconds": 28,
+   "held_requests": 0,
+   "problems": [],
+   "rerun_of": "98150bb1bca640e7"
+  },
+  {
+   "goal": "people",
+   "name": "Marlies Hersbach",
+   "company": "MANGO",
+   "role": "Chief People Officer",
+   "why_chosen": "Non-US company; trade-press coverage",
+   "run_id": "4010b5c20ea74809",
+   "ran_at": "2026-11-12T19:49:09.874260+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "MANGO–COIN partnership kicks off: the first store opens in Catania 15 OCTOBER 2026",
+    "event_date": "2026-10-15",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Mango Fashion Group",
+    "source_url": "https://mangofashiongroup.com/en/press-releases"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 7,
+    "angles": [
+     "growth"
+    ]
+   },
+   "sources": {
+    "usable": 26,
+    "seen": 30
+   },
+   "email": {
+    "subject": "Onboarding plans for MANGO's new store teams",
+    "body": "Hi Marlies,\n\nCongratulations on the new role. With the MANGO–COIN partnership starting and a first store opening in Catania, getting new hires settled could be a topic that lands on your desk early.\n\nBrightdesk sends each new hire a personal checklist of paperwork, equipment and training before their first day, and shows HR which steps are stuck and who they are waiting on. HR teams often learn that a new hire's paperwork or laptop is missing on the first morning; this puts it in front of them sooner.\n\nWould a short look at a sample onboarding plan be useful?\n\nBest,\nSam Carter, Brightdesk Demo",
+    "words": 105,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20388,
+   "seconds": 31,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "people",
+   "name": "Ida Malmqvist",
+   "company": "HiQ",
+   "role": "Chief People Officer",
+   "why_chosen": "Smaller Nordic company; sources may not be in English",
+   "run_id": "00d7877068304e92",
+   "ran_at": "2026-11-12T19:51:10.609846+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "HiQ is strengthening its focus on people, leadership and culture with the appointment of Ida Malmqvist as its new Chief People Officer.",
+    "event_date": "2026-08-25",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "HiQ appoints Ida Malmqvist as Chief People Officer",
+    "source_url": "https://hiq.se/en/news/hiq-appoints-ida-malmqvist-as-new-chief-people-officer/"
+   },
+   "facts": {
+    "usable": 2,
+    "set_aside": 6,
+    "angles": [
+     "company"
+    ]
+   },
+   "sources": {
+    "usable": 27,
+    "seen": 28
+   },
+   "email": {
+    "subject": "Onboarding plans for HiQ's people team",
+    "body": "Hi Ida,\n\nCongratulations on the new Chief People Officer role at HiQ. With people and culture now your focus, how new colleagues are welcomed could be one of the first things you look at.\n\nWe help HR teams track onboarding step by step. Each new hire gets a personal checklist of paperwork, equipment and training before their first day, and HR can see which steps are stuck and who they are waiting on. HR teams often learn that a new hire's paperwork or laptop is missing on the first morning.\n\nWould a short look at a sample onboarding plan be useful?\n\nBest,\nSam Carter, Brightdesk Demo",
+    "words": 106,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 5,
+    "backed": 5,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20770,
+   "seconds": 36,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "people",
+   "name": "Moonmoon Varma",
+   "company": "Coda",
+   "role": "Chief People Officer",
+   "why_chosen": "Company name shared by several firms",
+   "run_id": "ebf0b755289e4419",
+   "ran_at": "2026-11-12T19:51:49.847756+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "SINGAPORE, 6 October 2026** – [Coda](https://www.coda.co/) today announced the appointment of Moonmoon Varma as Chief People Officer, strengthening its global leadership as the company continues to scale.",
+    "event_date": "2026-10-06",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Coda Strengthens Leadership with New Chief People Officer",
+    "source_url": "https://www.coda.co/press/coda-appoints-moonmoon-varma-chief-people-officer/"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 6,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 32,
+    "seen": 32
+   },
+   "email": {
+    "subject": "Onboarding plans for Coda's growing teams",
+    "body": "Hi Moonmoon,\n\nCongratulations on the new role at Coda. With the company continuing to scale, how new hires get started could be one of the first things on your desk.\n\nBrightdesk sends each new hire a personal checklist of paperwork, equipment and training before their first day, and shows HR which steps are stuck and who they are waiting on. HR teams often learn that a new hire's paperwork or laptop is missing on the first morning; this puts that in view earlier.\n\nWould a short look at a sample onboarding plan be useful?\n\nBest,\nSam Carter, Brightdesk Demo",
+    "words": 99,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 20043,
+   "seconds": 27,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "it",
+   "name": "Jason James",
+   "company": "Acumatica",
+   "role": "Chief Information Officer",
+   "why_chosen": "Recent appointment; very common name",
+   "run_id": "1838ea3d02e144ff",
+   "ran_at": "2026-11-12T19:35:31.480872+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "today announced the appointment of Jason (JJ) James as chief information officer (CIO)",
+    "event_date": "2026-10-08",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Acumatica Names Jason James Chief Information Officer | Acumatica Cloud ERP",
+    "source_url": "https://www.acumatica.com/corporate-newsroom/press-releases/acumatica-names-jason-james-chief-information-officer/"
+   },
+   "facts": {
+    "usable": 1,
+    "set_aside": 5,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 30,
+    "seen": 31
+   },
+   "email": {
+    "subject": "Access reviews for Acumatica's IT and security teams",
+    "body": "Hi Jason,\n\nCongratulations on the CIO role at Acumatica. Stepping into that seat, how access to each system is reviewed could be one of the things you look at early.\n\nOur tool lists who has access to each system and when they last used it, then sends each manager a short review to keep or remove their team's access. IT teams often run access reviews by spreadsheet once a year, just before an audit.\n\nWould a short demo of an access review be useful?\n\nBest,\nJordan Lee, Keyline Demo",
+    "words": 89,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 19626,
+   "seconds": 28,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "it",
+   "name": "Mike Heuer",
+   "company": "Quantum",
+   "role": "Chief Information Officer",
+   "why_chosen": "Recent appointment; company name is a common word",
+   "run_id": "11b614cb77244599",
+   "ran_at": "2026-11-12T19:52:26.419564+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "strong",
+    "basis": "read_source",
+    "title": "A supported development",
+    "summary": "Quantum Corporation (Nasdaq: QMCO) today announced the appointment of Mike Heuer as its Chief Information Officer, effective immediately.",
+    "event_date": "2026-09-14",
+    "verdict": "Strong: recent, dated and sourced.",
+    "source_title": "Quantum Appoints Mike Heuer as Chief Information Officer Quantum Corporation (QMCO)",
+    "source_url": "https://investors.quantum.com/news-events/press-releases/detail/270/quantum-appoints-mike-heuer-as-chief-information-officer"
+   },
+   "facts": {
+    "usable": 3,
+    "set_aside": 5,
+    "angles": [
+     "company",
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 26,
+    "seen": 28
+   },
+   "email": {
+    "subject": "Access reviews for Quantum's IT team",
+    "body": "Hi Mike,\n\nCongratulations on joining Quantum as CIO. As you get to know the systems your IT and security teams look after, who has access to what may be a useful place to look.\n\nWe help with access reviews: you get a list of who has access to each system and when they last used it, and each manager gets a short review to keep or remove their team's access. IT teams often run access reviews by spreadsheet once a year, just before an audit.\n\nWould a short demo of an access review be useful?\n\nBest,\nJordan Lee, Keyline Demo",
+    "words": 100,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 4,
+    "backed": 4,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 19793,
+   "seconds": 28,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "it",
+   "name": "Joel Chaplin",
+   "company": "Precisely",
+   "role": "Chief Information Officer",
+   "why_chosen": "Internal promotion; announcement date unclear",
+   "run_id": "fdc3e497718d49ed",
+   "ran_at": "2026-11-12T19:57:14.797917+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "moderate",
+    "basis": "read_source",
+    "title": "An established responsibility",
+    "summary": "In this role, he leads global IT and cloud operations, responsible for delivering a world-class digital experience as the company continues its rapid growth in data integrity.",
+    "event_date": null,
+    "verdict": "Good: sourced and relevant, but not recent news.",
+    "source_title": "Precisely Holdings, LLC - Executive Bio, Top Executies, and Transitions - Equilar ExecAtlas",
+    "source_url": "https://people.equilar.com/bio/org/precisely-holdings-llc/8101274"
+   },
+   "facts": {
+    "usable": 5,
+    "set_aside": 3,
+    "angles": [
+     "other",
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 33,
+    "seen": 33
+   },
+   "email": {
+    "subject": "Access reviews across Precisely's global IT",
+    "body": "Hi Joel,\n\nWith global IT and cloud operations under your leadership, who can get into which systems is probably part of the picture, and that's why I'm writing about access reviews.\n\nOur tool lists who has access to each system and when they last used it, then sends each manager a short review to keep or remove their team's access. IT teams often run access reviews by spreadsheet once a year, just before an audit, and this replaces that scramble.\n\nWould a short demo of an access review be useful?\n\nBest,\nJordan Lee, Keyline Demo",
+    "words": 95,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 3,
+    "backed": 3,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 19638,
+   "seconds": 22,
+   "held_requests": 0,
+   "problems": [],
+   "rerun_of": "e14aaec05e504997"
+  },
+  {
+   "goal": "it",
+   "name": "Dave Shuman",
+   "company": "Precisely",
+   "role": "Chief Data Officer",
+   "why_chosen": "Adjacent role, not the exact target audience",
+   "run_id": "7a3cb6cd603144f2",
+   "ran_at": "2026-11-12T19:55:01.903267+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "matched",
+   "hook": {
+    "strength": "moderate",
+    "basis": "read_source",
+    "title": "An established responsibility",
+    "summary": "Dave has over twenty years of experience in executive-level leadership roles in IT, data, and operations.",
+    "event_date": null,
+    "verdict": "Good: sourced and relevant, but not recent news.",
+    "source_title": "Dave Shuman | Precisely",
+    "source_url": "https://www.precisely.com/team/dave-shuman/"
+   },
+   "facts": {
+    "usable": 2,
+    "set_aside": 6,
+    "angles": [
+     "person"
+    ]
+   },
+   "sources": {
+    "usable": 33,
+    "seen": 33
+   },
+   "email": {
+    "subject": "Access reviews for Precisely's data leadership",
+    "body": "Hi Dave,\n\nLeading data, governance and enterprise data strategy across IT and operations means a lot of people touch a lot of systems, which is why I'm writing about access.\n\nKeyline lists who has access to each system and when they last used it, then sends each manager a short review to keep or remove their team's access. IT teams often run access reviews by spreadsheet once a year, just before an audit.\n\nWould a short demo of an access review be useful?\n\nBest,\nJordan Lee, Keyline Demo",
+    "words": 88,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 3,
+    "backed": 3,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 18855,
+   "seconds": 25,
+   "held_requests": 0,
+   "problems": []
+  },
+  {
+   "goal": "it",
+   "name": "George Forbes",
+   "company": "U.S. Department of Commerce",
+   "role": "Chief Information Officer",
+   "why_chosen": "Government, not a company",
+   "run_id": "fd091646a5b14487",
+   "ran_at": "2026-11-12T19:55:29.088791+00:00",
+   "execution_status": "completed",
+   "outcome": "ready_for_review",
+   "identity": "unconfirmed",
+   "hook": {
+    "strength": "weak",
+    "basis": "read_source",
+    "title": "About their company",
+    "summary": "George Forbes will serve as the chief information officer for the Department of Commerce’s Bureau of Industry and Security, according to an [**announcement**](https://www.linkedin.com/feed/update/urn:li:activity:7443649974657007616/?originTrackingId=ZzUht2qanGJhXN3jrjRs7Q%3D%3D) by Forbes on LinkedIn.",
+    "event_date": null,
+    "verdict": "Weaker: true and sourced, but not a strong reason to write now.",
+    "source_title": "George Forbes Heads Over to Commerce – MeriTalk",
+    "source_url": "https://www.meritalk.com/articles/george-forbes-heads-over-to-commerce"
+   },
+   "facts": {
+    "usable": 0,
+    "set_aside": 5,
+    "angles": []
+   },
+   "sources": {
+    "usable": 34,
+    "seen": 37
+   },
+   "email": {
+    "subject": "Access reviews for Bureau of Industry and Security",
+    "body": "Hi George,\n\nWith IT at the Bureau of Industry and Security in your hands, who can get into which systems is the kind of question that may sit close to your desk. That's why I'm writing.\n\nOur access reviews list who has access to each system and when they last used it. Then each manager gets a short review to keep or remove their team's access. IT teams often run these by spreadsheet once a year, just before an audit.\n\nWould a short demo of an access review be useful?\n\nBest,\nJordan Lee, Keyline Demo",
+    "words": 95,
+    "origin": "model",
+    "writer": "claude-sonnet-5.5",
+    "versions": 1,
+    "first_pass": true,
+    "passed": true,
+    "sentences": 5,
+    "backed": 5,
+    "blocked_before_review": 0
+   },
+   "cost_micro": 24590,
+   "seconds": 41,
+   "held_requests": 0,
+   "problems": []
+  }
+ ]
+}

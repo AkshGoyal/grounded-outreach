@@ -1,0 +1,8 @@
+<section id="live-progress" class="panel live-work" data-research-progress="/research/{{ run.id }}/status" {% if not active %}hidden{% endif %}>
+<div class="section-heading"><h2><span class="work-spinner" aria-hidden="true"></span> <span data-progress-label>{{ run.status|friendly_status }}</span></h2><span class="badge" data-poll-health>Live updates</span></div>
+<p class="field-help" data-provider-wait hidden role="status"></p>
+<p data-progress-detail role="status">{{ run.progress or 'Preparing the next request. Results save as they finish.' }}</p>
+<p class="field-help">Companies meeting contact preference: <strong data-summary="target_ready">{{ work_summary.target_ready }}</strong> / {{ run.target_count }} · Saved companies: <strong data-progress-companies>{{ total_leads }}</strong> · Accounted spend: <strong data-progress-spent>${{ '%.4f'|format(run.spent) }}</strong> of ${{ '%.2f'|format(run.budget) }}</p>
+<p class="field-help" data-progress-explanation>Work continues while this app is running. We show actual saved results; completion time depends on the providers.</p>
+<a class="button secondary" data-progress-open href="/research/{{ run.id }}" hidden>Open latest saved results →</a>
+</section>

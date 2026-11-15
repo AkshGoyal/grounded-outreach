@@ -1,0 +1,37 @@
+# Outreach Workbench: Render blueprint.
+# Not applied by an agent. Aksh pushes the branch, creates the service and enters keys.
+# The other blueprints (deployment/render.yaml, root render.yaml) are for the original
+# application and are unchanged. Steps: docs/WORKBENCH_RUNNING.md, section 5.
+services:
+  - type: web
+    name: outreach-workbench-workbench
+    runtime: python
+    branch: workbench/batch           # the single submission branch; must be pushed first
+    plan: starter               # a persistent disk (saved history) needs a paid instance
+    numInstances: 1             # one worker: runs, claims and the ledger are single-process
+    autoDeployTrigger: "off"
+    buildCommand: uv sync --locked --no-dev --python 3.11
+    # Live mode: at most $0.05 per run and $0.50 per UTC day across all runs.
+    # A typical Thorough run with an email costs about $0.01.
+    startCommand: .venv/bin/python -m outreach.workbench --hosted --mode live --budget-usd 0.05 --daily-usd 0.50
+    healthCheckPath: /health
+    disk:
+      name: workbench-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"
+      - key: WORKBENCH_DATA_DIR
+        value: /var/data/workbench
+      - key: WORKBENCH_APP_PASSWORD        # evaluator login; share it privately, never in the repo
+        generateValue: true
+      - key: OUTREACH_PARALLEL_API_KEY
+        sync: false                  # entered in the Render dashboard; never committed
+      - key: OUTREACH_OPENROUTER_API_KEY
+        sync: false
+      # Research and drafting models, tried in order (defaults in src/outreach/config.py).
+      - key: OUTREACH_WORKBENCH_RESEARCH_MODELS
+        value: anthropic/claude-haiku-5.5,anthropic/claude-haiku-4.5,deepseek/deepseek-v4.1-flash
+      - key: OUTREACH_WORKBENCH_DRAFT_MODELS
+        value: anthropic/claude-sonnet-5.5,anthropic/claude-haiku-5.5,anthropic/claude-haiku-4.5

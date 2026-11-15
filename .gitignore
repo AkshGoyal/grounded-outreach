@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------------------
+# Recipient data is PII. It must never enter git history — a committed file is
+# still recoverable after deletion, so the only safe moment is before the first
+# commit. See CLAUDE.md and the project's safety principles.
+# ---------------------------------------------------------------------------
+/data/
+/private/
+*.csv
+*.xlsx
+*.xls
+
+# Seeded FICTIONAL fixtures are safe and must be committed, so re-admit them.
+!tests/fixtures/**/*.csv
+!tests/fixtures/**/*.xlsx
+
+# Campaign files are yours: offer text, and a closing with phone numbers and
+# registration details. Only the examples are shared.
+/campaigns/*
+!/campaigns/example.md
+!/campaigns/example.closing.md
+
+# Operational databases hold recipient rows, drafts and reply bodies.
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets come from the environment only. .env.example IS committed.
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+token.json
+
+# Runtime
+*.log
+/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Mailbox encryption keys must never enter git history.
+mail-credentials.key
+*.key
+/workspace-preview/
+
+# Local caches and runtime artifacts
+/.local-cache/
+/.runtime/
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# The hosted showcase: 15 evaluation runs, contact details stripped (see docs/WORKBENCH_RUNNING.md).
+!src/outreach/web/evaluation/showcase.db

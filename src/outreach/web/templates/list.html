@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block body %}<a class="breadcrumb" href="/lists">← Lead lists</a><div class="section-heading"><h1>{{ item.name }}</h1><a href="/campaigns/new?list_id={{ item.id }}" class="button">Use this audience in a new campaign</a></div><p>{{ item.tags }} · {{ leads|length }} saved leads</p>{% include '_leads.html' %}{% endblock %}

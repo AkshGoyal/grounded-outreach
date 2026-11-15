@@ -1,0 +1,7 @@
+{% if request.query_params.get("view")=="archived" %}{% set archive_view=true %}{% endif %}<form class="filters" method="get">
+<input aria-label="Search" name="q" placeholder="Search names, briefs or tags" value="{{ request.query_params.get('q','') }}">
+<select aria-label="Project filter" name="project_id">
+<option value="">All projects</option>{% for p in projects %}<option value="{{ p.id }}" {% if request.query_params.get('project_id')==p.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}</select>{% if purposes %}<select aria-label="Purpose filter" name="purpose_filter">
+<option value="">All purposes</option>{% for p in purposes %}<option {% if request.query_params.get('purpose_filter')==p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>{% endif %}{% if filter_statuses %}<select name="status" aria-label="Status filter"><option value="">All statuses</option>{% for status in filter_statuses %}<option value="{{ status }}" {% if request.query_params.get('status')==status %}selected{% endif %}>{{ status|replace('_',' ') }}</option>{% endfor %}</select>{% endif %}
+{% if archive_view %}<input type="hidden" name="view" value="archived">{% endif %}<button class="secondary">Filter</button>
+</form>

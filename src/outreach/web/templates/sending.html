@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block head %}{% if job and not job.finished %}{% if feedback_enabled %}<noscript><meta http-equiv="refresh" content="2"></noscript>{% else %}<meta http-equiv="refresh" content="2">{% endif %}{% endif %}{% endblock %}
+{% block body %}
+<h1>Sending</h1>
+{% if not job %}
+<p class="empty">No sending run is available in this server session. Earlier sends remain in each campaign’s saved message history. <a href="/campaigns">Open campaigns</a> to review history before retrying an interrupted or uncertain send.</p>
+{% else %}
+<p class="crumb"><a href="/campaigns/{{ job.campaign_id }}/drafts">{{ metadata.name if metadata else job.campaign_id }}</a>
+</p>{% if metadata %}<p>Sender: {{ metadata.sender_email or "Environment account" }} · <a href="/campaigns/{{ job.campaign_id }}/history">Saved message history →</a></p>{% endif %}
+<div class="progress" data-send-progress role="progressbar" aria-valuemin="0" aria-valuemax="{{ job.total }}"
+     aria-valuenow="{{ job.outcomes|length }}">
+  <span style="width: {{ (100 * job.outcomes|length / job.total)|round|int }}%"></span></div>
+
+<div class="counts">
+  <div class="count ok"><strong data-job-count="sent">{{ job.sent }}</strong> sent</div>
+  <div class="count bad"><strong data-job-count="failed">{{ job.failed }}</strong> held, failed or uncertain</div>
+  <div class="count"><strong data-job-count="remaining">{{ job.total - job.outcomes|length }}</strong> still to go</div>
+</div>
+
+{% if job.crashed %}
+<p class="error">Sending stopped on an unexpected error: {{ job.crashed }}
+  Inspect pending sends and the provider Sent folder before restarting. Never repeat an uncertain delivery automatically.</p>
+{% elif job.finished %}
+<p class="ok-note">{% if job.stop_requested %}Stopped. {% else %}Done. {% endif %}
+  {{ job.sent }} accepted by provider{% if job.failed %}, {{ job.failed }} held, failed or uncertain (reasons below){% endif %}.
+  Check replies through the campaign's chosen account.</p>
+<p class="row"><a class="button primary" href="/campaigns/{{ job.campaign_id }}">Open campaign</a><a href="/inbox?campaign_id={{ job.campaign_id }}">Campaign replies</a></p>
+{% else %}
+<section class="notice" data-job-progress="sending"><p data-job-detail role="status">Sending your approved selection.</p><a class="button secondary" data-job-open href="/sending" hidden>Open final sending results →</a></section><p class="note" data-job-static-note>{% if job.stop_requested %}Stopping after the current email…
+  {% elif job.seconds_to_next is not none %}Next email in {{ job.seconds_to_next }} seconds.
+  {% else %}Sending…{% endif %} This page updates by itself. Sending continues while the server is running. A server restart stops this run; saved sends remain recorded.</p>
+{% if not job.stop_requested %}
+<form method="post" data-job-control action="/sending/stop"><button>Stop after this email</button></form>
+{% endif %}
+{% endif %}
+
+{% if job.outcomes %}
+<table class="audience-table">
+  <thead><tr><th>Company</th><th>Email</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for o in job.outcomes %}
+    <tr><td data-label="Company">{{ o.draft.company }}</td><td data-label="Email">{{ o.draft.email }}</td>
+      <td data-label="Result">{% if o.sent %}<span class="status s-sent">sent</span>{% else %}<span class="status s-review">check result</span> {{ o.detail }}{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'workbench/base.html' %}
+{% block title %}New prospect | Outreach Workbench{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>New prospect</h1>
+    <p class="lede">Paste up to {{ max_batch }} prospects. Each gets its own researched email, and you go through them one at a time.</p>
+  </div>
+</div>
+{% set many = true %}{% include 'workbench/_mode_tabs.html' %}
+
+<div class="start-grid">
+  <section class="card form-card" aria-labelledby="list-heading">
+    {% if errors %}
+    <div class="notice notice-error" role="alert" tabindex="-1" data-form-errors>
+      <h3>Check these details</h3>
+      <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      <p>Your list is kept below.</p>
+    </div>
+    {% endif %}
+    <form method="post" action="/batch" class="prospect-form" data-batch-form>
+      <input type="hidden" name="request_id" value="{{ request_id }}">
+      {% include 'workbench/_options.html' %}
+      <section class="start-step" aria-labelledby="list-heading">
+      <h2 id="list-heading" class="step-title">Who?</h2>
+      <div class="field">
+        <label for="batch-prospects">Prospects, one per line</label>
+        <textarea id="batch-prospects" name="prospects" rows="9" required aria-describedby="batch-help" placeholder="Maya Rao, Cedar Works, Finance Director&#10;Jordan Ellis, Northwind Supply, Controller" data-batch-list>{{ text }}</textarea>
+        <p class="hint" id="batch-help">Name, company, then job title and company website if you have them. You can paste rows straight from a spreadsheet. Up to {{ max_batch }}.</p>
+      </div>
+      </section>
+      {% set many = true %}{% include 'workbench/_start.html' %}
+    </form>
+  </section>
+</div>
+{% if batches %}
+<section class="card history-card batch-list" aria-labelledby="batches-heading">
+  <h2 id="batches-heading" class="batch-list-heading">Earlier batches</h2>
+  <ol class="history-list">
+    {% for item in batches %}
+    {% set done = item.runs|rejectattr('execution_status', 'in', ['queued', 'running'])|list|length %}
+    <li class="history-row batch-row">
+      <div class="history-prospect"><h3><a class="history-open" href="/batches/{{ item.id }}">{{ item.runs|length }} prospect{{ '' if item.runs|length == 1 else 's' }}</a></h3><p>{{ item.runs[0].prospect.name }}{% if item.runs|length > 1 %} and {{ item.runs|length - 1 }} more{% endif %}</p></div>
+      <div class="history-status"><span class="hint">{{ done }} of {{ item.runs|length }} finished</span></div>
+      <time datetime="{{ item.created_at }}">{{ item.created_at|when }}</time>
+      <span class="quiet-label">{{ item.mode|capitalize }}</span>
+      <span class="history-next" aria-hidden="true">Open</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,97 @@
+[
+  {
+    "name": "Karya departments",
+    "url": "https://www.karya.in/contact/",
+    "text": "Business sales@karya.in\nGrants & Funding grants@karya.in\nOperations Partnerships operations@karya.in\nPeople & Culture careers@karya.in\nsupport@karya.in",
+    "emails": [
+      "sales@karya.in",
+      "grants@karya.in",
+      "operations@karya.in",
+      "careers@karya.in",
+      "support@karya.in"
+    ],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Jeff Geerling explicit obfuscation",
+    "url": "https://www.jeffgeerling.com/about/",
+    "text": "Send me an email at jeff (at) jeffgeerling.com.",
+    "emails": [
+      "jeff@jeffgeerling.com"
+    ],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Arvid Kahl publication",
+    "url": "https://thebootstrappedfounder.com/contact/",
+    "text": "by Arvid Kahl\nYou can reach The Bootstrapped Founder here:\narvid@thebootstrappedfounder.com",
+    "emails": [
+      "arvid@thebootstrappedfounder.com"
+    ],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Patrick McKenzie publication",
+    "url": "https://training.kalzumeus.com/conversion-optimization-mini-course/confirmation",
+    "text": "If you have any questions, drop me an email at patrick@kalzumeus.com",
+    "emails": [
+      "patrick@kalzumeus.com"
+    ],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Professional sponsorship inboxes",
+    "url": "https://swyx.io/about",
+    "text": "Sponsor AI Engineer → (sponsorships@ai.engineer)\nSponsor Latent Space → (business@latent.space)",
+    "emails": [
+      "sponsorships@ai.engineer",
+      "business@latent.space"
+    ],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Contact form is not an email",
+    "url": "https://sive.rs/contact",
+    "text": "your full name\nyour email address\nyour country\nnearest city",
+    "emails": [],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Federated social handle is not an email",
+    "url": "https://john.onolan.org/about/",
+    "text": "Founder/CEO @ Ghost.org\n@john@john.onolan.org",
+    "emails": [],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Founder identity alone supplies no address",
+    "url": "https://plausible.io/about",
+    "text": "Uku Taht started Plausible in December 2018",
+    "emails": [],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Contact form field is not an address",
+    "url": "https://niramai.com/contact/",
+    "text": "Email",
+    "emails": [],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  },
+  {
+    "name": "Historical founder evidence alone supplies no address",
+    "url": "https://thebootstrappedfounder.com/about-me/",
+    "text": "My name is Arvid Kahl. I co-founded, bootstrapped, and sold FeedbackPanda.com",
+    "emails": [],
+    "retrieved_at": "2026-10-07",
+    "scope": "Short public-page excerpt; not a full-page or live retrieval benchmark."
+  }
+]
