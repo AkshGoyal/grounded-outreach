@@ -1,12 +1,12 @@
-# Workbench Outreach Workbench on Render's free plan (the submission link).
+# Outreach Workbench on Render's free plan, live mode (paid calls, capped).
 # Free web services sleep after 15 minutes without visits (about a minute to wake) and
 # have no persistent disk, so saved runs reset whenever the service restarts or
 # redeploys. For history that survives restarts, use workbench-render.yaml (paid, with a disk).
 services:
   - type: web
-    name: outreach-workbench-workbench
+    name: grounded-outreach-live
     runtime: python
-    branch: workbench/batch
+    branch: main
     plan: free
     numInstances: 1             # one worker: runs, claims and the ledger are single-process
     autoDeployTrigger: "off"
@@ -19,7 +19,7 @@ services:
         value: "3.11.11"
       - key: WORKBENCH_DATA_DIR
         value: /tmp/workbench              # temporary on the free plan
-      - key: WORKBENCH_APP_PASSWORD        # evaluator login; share it privately, never in the repo
+      - key: WORKBENCH_APP_PASSWORD        # login password; share it privately, never in the repo
         generateValue: true
       - key: OUTREACH_PARALLEL_API_KEY
         sync: false                  # pasted in the Render dashboard; never committed

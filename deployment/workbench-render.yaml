@@ -4,9 +4,9 @@
 # application and are unchanged. Steps: docs/WORKBENCH_RUNNING.md, section 5.
 services:
   - type: web
-    name: outreach-workbench-workbench
+    name: grounded-outreach-live-disk
     runtime: python
-    branch: workbench/batch           # the single submission branch; must be pushed first
+    branch: main                       # must be pushed first
     plan: starter               # a persistent disk (saved history) needs a paid instance
     numInstances: 1             # one worker: runs, claims and the ledger are single-process
     autoDeployTrigger: "off"
@@ -24,7 +24,7 @@ services:
         value: "3.11.11"
       - key: WORKBENCH_DATA_DIR
         value: /var/data/workbench
-      - key: WORKBENCH_APP_PASSWORD        # evaluator login; share it privately, never in the repo
+      - key: WORKBENCH_APP_PASSWORD        # login password; share it privately, never in the repo
         generateValue: true
       - key: OUTREACH_PARALLEL_API_KEY
         sync: false                  # entered in the Render dashboard; never committed

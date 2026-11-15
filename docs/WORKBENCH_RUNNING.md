@@ -100,10 +100,10 @@ Not yet run live: same-name, thin-footprint and old-news prospects, and a live b
 These edge cases are covered by the fictional examples and the test suite; a short
 paid rehearsal with real prospects is recommended before recording.
 
-## 5. Deployment (Aksh applies)
+## 5. Deployment
 
-Live at **https://outreach-workbench-workbench.onrender.com** (deployed 12 Nov 2026; the
-password is `WORKBENCH_APP_PASSWORD` in the Render dashboard's Environment tab).
+Public demo blueprint (fixture mode, no keys, no cost): [`deployment/render-demo.yaml`](../deployment/render-demo.yaml).
+The login password is `WORKBENCH_APP_PASSWORD`, set in the Render dashboard's Environment tab.
 
 Free hosting blueprint: [`deployment/workbench-render-free.yaml`](../deployment/workbench-render-free.yaml)
 (Render free plan: sleeps after 15 minutes idle, about a minute to wake; saved runs

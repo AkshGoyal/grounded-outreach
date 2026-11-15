@@ -1,0 +1,21 @@
+# Public portfolio demo of the Outreach Workbench on Render's free plan.
+# Fixture mode only: fictional prospects and sources, no API keys, no paid calls, nothing sent.
+# The 15 real evaluation runs are seeded on start, so the Evaluation page shows real results.
+# Free services sleep after 15 idle minutes (about a minute to wake) and reset on restart.
+services:
+  - type: web
+    name: grounded-outreach-demo
+    runtime: python
+    branch: main
+    plan: free
+    numInstances: 1
+    buildCommand: pip install uv==0.13.5 && uv sync --locked --no-dev --python 3.11
+    startCommand: .venv/bin/python -m outreach.workbench --hosted --mode fixture
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.11"
+      - key: WORKBENCH_DATA_DIR
+        value: /tmp/workbench
+      - key: WORKBENCH_APP_PASSWORD   # a demo password you choose and publish in the README
+        sync: false
