@@ -17,5 +17,5 @@ services:
         value: "3.11.11"
       - key: WORKBENCH_DATA_DIR
         value: /tmp/workbench
-      - key: WORKBENCH_APP_PASSWORD   # a demo password you choose and publish in the README
-        sync: false
+      - key: WORKBENCH_APP_PASSWORD   # Render generates it; copy it from the Environment tab into the README
+        generateValue: true
