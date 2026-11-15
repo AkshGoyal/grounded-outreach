@@ -3,7 +3,7 @@
 **Personalised B2B email where every sentence can be traced to a source, and nothing is
 sent until a person approves the exact text.**
 
-**[Live demo](https://grounded-outreach-demo.onrender.com)** (example mode: fictional prospects, no paid calls; the free server can take about a minute to wake) · [Evaluation](docs/WORKBENCH_EVALUATION.md) · [How it works](docs/WORKBENCH_OVERVIEW.md)
+**[Live demo](https://grounded-outreach-demo.onrender.com)** (password `passwordeasy`; example mode: fictional prospects, no paid calls; the free server can take about a minute to wake) · [Evaluation](docs/WORKBENCH_EVALUATION.md) · [How it works](docs/WORKBENCH_OVERVIEW.md)
 
 ![A drafted email: every sentence is underlined and linked to its source, with the hook and its strength on the right](docs/media/draft.png)
 
